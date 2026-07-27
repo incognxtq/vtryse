@@ -1,37 +1,34 @@
-import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom'
-import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
-import Settings from './pages/Settings'
-import ProtectedRoute from './components/ProtectedRoute'
-import Notifications from './components/Notifications'
-import { supabase } from './supabaseClient'
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import Settings from "./pages/Settings";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Notifications from "./components/Notifications";
+import Sidebar from "./components/Sidebar";
+import { useTheme } from "./hooks/useTheme";
+import { useLocation } from "react-router-dom";
 
-function NavBar() {
-  const navigate = useNavigate()
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    navigate('/')
-  }
+function Layout({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const showSidebar = location.pathname !== "/";
 
   return (
-    <nav className="p-4 flex gap-4 bg-gray-100 items-center">
-      <Link to="/">Login</Link>
-      <Link to="/dashboard">Dashboard</Link>
-      <Link to="/settings">Settings</Link>
-      <button onClick={handleLogout} className="ml-auto bg-red-600 text-white px-3 py-1 rounded">
-        Log Out
-      </button>
-    </nav>
-  )
+    <div className="min-h-screen bg-void text-text-primary">
+      {showSidebar && <Sidebar />}
+      <Notifications />
+      <main className={showSidebar ? "md:ml-56 pt-14 md:pt-0" : ""}>
+        {children}
+      </main>
+    </div>
+  );
 }
 
 function App() {
+  useTheme();
+
   return (
     <BrowserRouter>
-      <div className="dark:bg-gray-900 dark:text-white min-h-screen">
-        <NavBar />
-        <Notifications />
+      <Layout>
         <Routes>
           <Route path="/" element={<Login />} />
           <Route
@@ -51,9 +48,9 @@ function App() {
             }
           />
         </Routes>
-      </div>
+      </Layout>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;

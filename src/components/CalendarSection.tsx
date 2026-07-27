@@ -29,8 +29,11 @@ function CalendarSection() {
       .select('*')
       .order('event_date', { ascending: true })
 
-    if (error) setErrorMsg(error.message)
-    else setEvents(data || [])
+    if (error) {
+      setErrorMsg(error.message)
+    } else {
+      setEvents(data || [])
+    }
   }
 
   useEffect(() => {
@@ -61,7 +64,7 @@ function CalendarSection() {
         .upload(fileName, file)
 
       if (uploadError) {
-        setErrorMsg(uploadError.message)
+        setErrorMsg('Upload failed: ' + uploadError.message)
         setUploading(false)
         return
       }
@@ -100,73 +103,81 @@ function CalendarSection() {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-2">Calendar</h2>
+      <h2 className="text-lg font-semibold mb-3 text-text-primary">Calendar</h2>
 
       <div className="flex flex-col gap-2 mb-4">
         <select
           value={type}
           onChange={(e) => setType(e.target.value)}
-          className="border p-2 rounded"
+          className="bg-void border border-border-subtle p-2 rounded text-text-primary text-sm"
         >
           <option value="event">Event</option>
           <option value="task">Task</option>
           <option value="holiday">Holiday</option>
           <option value="note">Note</option>
         </select>
+
         <input
           type="text"
           placeholder="Title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="border p-2 rounded"
+          className="bg-void border border-border-subtle p-2 rounded text-text-primary placeholder:text-text-muted text-sm"
         />
+
         <input
           type="date"
           value={eventDate}
           onChange={(e) => setEventDate(e.target.value)}
-          className="border p-2 rounded"
+          className="bg-void border border-border-subtle p-2 rounded text-text-primary text-sm"
         />
+
         <input
           type="time"
           value={eventTime}
           onChange={(e) => setEventTime(e.target.value)}
-          className="border p-2 rounded"
+          className="bg-void border border-border-subtle p-2 rounded text-text-primary text-sm"
         />
+
         <textarea
           placeholder="Description (optional)"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="border p-2 rounded"
+          className="bg-void border border-border-subtle p-2 rounded text-text-primary placeholder:text-text-muted text-sm"
         />
+
         <input
           type="file"
           onChange={(e) => setFile(e.target.files?.[0] || null)}
-          className="border p-2 rounded"
+          className="text-text-muted text-sm"
         />
+
         <button
           onClick={handleAddEvent}
           disabled={uploading}
-          className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+          className="bg-trace text-white px-4 py-2 rounded-lg hover:bg-trace-dim transition-colors disabled:opacity-50 text-sm"
         >
           {uploading ? 'Uploading...' : 'Add'}
         </button>
-        {errorMsg && <p className="text-red-600">{errorMsg}</p>}
+
+        {errorMsg && <p className="text-red-400 text-sm">{errorMsg}</p>}
       </div>
 
       <ul className="space-y-2">
         {events.map((event) => (
-          <li key={event.id} className="border p-2 rounded">
-            <span className="font-semibold">[{event.type}]</span> {event.title} —{' '}
-            {event.event_date}
-            {event.event_time && ` at ${event.event_time}`}{' '}
-            <span className="text-gray-500">({event.status})</span>
+          <li key={event.id} className="bg-void border border-border-subtle p-3 rounded-lg text-sm">
+            <span className="font-medium text-trace">[{event.type}]</span>{' '}
+            <span className="text-text-primary">{event.title}</span> —{' '}
+            <span className="text-text-muted">{event.event_date}</span>
+            {event.event_time && <span className="text-text-muted"> at {event.event_time}</span>}{' '}
+            <span className="text-text-muted">({event.status})</span>
             {event.attachment_url && (
               <div className="mt-1">
                 <a>
                   href={event.attachment_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 underline text-sm"
+                  className="text-trace underline text-xs"
                   View attachment
                 </a>
               </div>
