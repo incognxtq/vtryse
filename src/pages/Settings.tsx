@@ -4,9 +4,14 @@ import { supabase } from '../supabaseClient'
 function Settings() {
   const [name, setName] = useState('')
   const [username, setUsername] = useState('')
-  const [theme, setTheme] = useState('system')
+  const [avatarUrl, setAvatarUrl] = useState('')
+  const [theme, setThemeState] = useState('system')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [uploading, setUploading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
+  const [passwordMsg, setPasswordMsg] = useState('')
 
   const fetchProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -23,9 +28,9 @@ function Settings() {
     } else if (data) {
       setName(data.name || '')
       setUsername(data.username || '')
-      setTheme(data.theme || 'system')
+      setAvatarUrl(data.avatar_url || '')
+      setThemeState(data.theme || 'system')
     }
-    // If no data, that's fine — profile row will be created on first save
   }
 
   useEffect(() => {
@@ -40,13 +45,65 @@ function Settings() {
     document.documentElement.classList.toggle('dark', isDark)
   }
 
-  const handleSave = async () => {
+  const handleThemeChange = async (newTheme: string) => {
+    setThemeState(newTheme)
+    applyTheme(newTheme)
+
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
     const { error } = await supabase
       .from('profiles')
-      .upsert({ id: user.id, name, username, theme })
+      .upsert({ id: user.id, name, username, avatar_url: avatarUrl, theme: newTheme })
+
+    if (error) setErrorMsg(error.message)
+  }
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    setUploading(true)
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${user.id}/avatar.${fileExt}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(fileName, file, { upsert: true })
+
+    if (uploadError) {
+      setErrorMsg(uploadError.message)
+      setUploading(false)
+      return
+    }
+
+    const { data: urlData } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(fileName)
+
+    const newAvatarUrl = `${urlData.publicUrl}?t=${Date.now()}`
+    setAvatarUrl(newAvatarUrl)
+
+    const { error } = await supabase
+      .from('profiles')
+      .upsert({ id: user.id, name, username, avatar_url: newAvatarUrl, theme })
+
+    if (error) setErrorMsg(error.message)
+    else setSuccessMsg('Profile picture updated!')
+
+    setUploading(false)
+  }
+
+  const handleSaveAccount = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { error } = await supabase
+      .from('profiles')
+      .upsert({ id: user.id, name, username, avatar_url: avatarUrl, theme })
 
     if (error) {
       setErrorMsg(error.message)
@@ -54,7 +111,25 @@ function Settings() {
     } else {
       setErrorMsg('')
       setSuccessMsg('Saved successfully!')
-      applyTheme(theme)
+    }
+  }
+
+  const handleChangePassword = async () => {
+    setPasswordMsg('')
+
+    if (!newPassword || newPassword !== confirmPassword) {
+      setPasswordMsg('Passwords do not match')
+      return
+    }
+
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+
+    if (error) {
+      setPasswordMsg(error.message)
+    } else {
+      setPasswordMsg('Password updated successfully!')
+      setNewPassword('')
+      setConfirmPassword('')
     }
   }
 
@@ -62,8 +137,33 @@ function Settings() {
     <div className="p-8 max-w-md">
       <h1 className="text-2xl font-semibold mb-8 text-text-primary">Settings</h1>
 
-      <h2 className="text-lg font-semibold mb-2 text-text-primary">Account</h2>
-      <div className="flex flex-col gap-2 mb-6">
+      {/* Account */}
+      <h2 className="text-lg font-semibold mb-3 text-text-primary">Account</h2>
+      <div className="flex flex-col gap-3 mb-8">
+        <div className="flex items-center gap-4">
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt="Profile"
+              className="w-16 h-16 rounded-full object-cover border border-border-subtle"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-surface-hover border border-border-subtle flex items-center justify-center text-text-muted text-xs">
+              No photo
+            </div>
+          )}
+          <label className="text-sm text-trace cursor-pointer hover:underline">
+            {uploading ? 'Uploading...' : 'Change photo'}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarUpload}
+              className="hidden"
+              disabled={uploading}
+            />
+          </label>
+        </div>
+
         <input
           type="text"
           placeholder="Name"
@@ -78,39 +178,68 @@ function Settings() {
           onChange={(e) => setUsername(e.target.value)}
           className="border border-border-subtle bg-surface p-2 rounded text-text-primary"
         />
+        <button
+          onClick={handleSaveAccount}
+          className="bg-green-600 text-white px-4 py-2 rounded self-start text-sm"
+        >
+          Save Changes
+        </button>
+        {errorMsg && <p className="text-red-400 text-sm">{errorMsg}</p>}
+        {successMsg && <p className="text-green-400 text-sm">{successMsg}</p>}
       </div>
 
-      <h2 className="text-lg font-semibold mb-2 text-text-primary">Dashboard Customization</h2>
-      <div className="flex gap-2 mb-6">
+      {/* Privacy */}
+      <h2 className="text-lg font-semibold mb-3 text-text-primary">Privacy</h2>
+      <div className="flex flex-col gap-3 mb-8">
+        <input
+          type="password"
+          placeholder="New password"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          className="border border-border-subtle bg-surface p-2 rounded text-text-primary"
+        />
+        <input
+          type="password"
+          placeholder="Confirm new password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          className="border border-border-subtle bg-surface p-2 rounded text-text-primary"
+        />
         <button
-          onClick={() => setTheme('light')}
-          className={`px-4 py-2 rounded ${theme === 'light' ? 'bg-trace text-white' : 'bg-surface-hover text-text-muted'}`}
+          onClick={handleChangePassword}
+          className="bg-trace text-white px-4 py-2 rounded self-start text-sm hover:bg-trace-dim transition-colors"
+        >
+          Update Password
+        </button>
+        {passwordMsg && (
+          <p className={`text-sm ${passwordMsg.includes('success') ? 'text-green-400' : 'text-red-400'}`}>
+            {passwordMsg}
+          </p>
+        )}
+      </div>
+
+      {/* Theme */}
+      <h2 className="text-lg font-semibold mb-3 text-text-primary">Theme</h2>
+      <div className="flex gap-2">
+        <button
+          onClick={() => handleThemeChange('light')}
+          className={`px-4 py-2 rounded text-sm ${theme === 'light' ? 'bg-trace text-white' : 'bg-surface-hover text-text-muted'}`}
         >
           Light
         </button>
         <button
-          onClick={() => setTheme('dark')}
-          className={`px-4 py-2 rounded ${theme === 'dark' ? 'bg-trace text-white' : 'bg-surface-hover text-text-muted'}`}
+          onClick={() => handleThemeChange('dark')}
+          className={`px-4 py-2 rounded text-sm ${theme === 'dark' ? 'bg-trace text-white' : 'bg-surface-hover text-text-muted'}`}
         >
           Dark
         </button>
         <button
-          onClick={() => setTheme('system')}
-          className={`px-4 py-2 rounded ${theme === 'system' ? 'bg-trace text-white' : 'bg-surface-hover text-text-muted'}`}
+          onClick={() => handleThemeChange('system')}
+          className={`px-4 py-2 rounded text-sm ${theme === 'system' ? 'bg-trace text-white' : 'bg-surface-hover text-text-muted'}`}
         >
           System
         </button>
       </div>
-
-      <button
-        onClick={handleSave}
-        className="bg-green-600 text-white px-4 py-2 rounded"
-      >
-        Save Changes
-      </button>
-
-      {errorMsg && <p className="mt-2 text-red-400">{errorMsg}</p>}
-      {successMsg && <p className="mt-2 text-green-400">{successMsg}</p>}
     </div>
   )
 }
