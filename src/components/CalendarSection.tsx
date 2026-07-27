@@ -7,7 +7,9 @@ interface CalendarEvent {
   title: string
   description: string | null
   event_date: string
+  event_time: string | null
   status: string
+  attachment_url: string | null
 }
 
 function CalendarSection() {
@@ -15,8 +17,11 @@ function CalendarSection() {
   const [title, setTitle] = useState('')
   const [type, setType] = useState('event')
   const [eventDate, setEventDate] = useState('')
+  const [eventTime, setEventTime] = useState('')
   const [description, setDescription] = useState('')
+  const [file, setFile] = useState<File | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
+  const [uploading, setUploading] = useState(false)
 
   const fetchEvents = async () => {
     const { data, error } = await supabase
@@ -24,11 +29,8 @@ function CalendarSection() {
       .select('*')
       .order('event_date', { ascending: true })
 
-    if (error) {
-      setErrorMsg(error.message)
-    } else {
-      setEvents(data || [])
-    }
+    if (error) setErrorMsg(error.message)
+    else setEvents(data || [])
   }
 
   useEffect(() => {
@@ -47,13 +49,40 @@ function CalendarSection() {
       return
     }
 
+    let attachmentUrl: string | null = null
+
+    if (file) {
+      setUploading(true)
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('attachments')
+        .upload(fileName, file)
+
+      if (uploadError) {
+        setErrorMsg(uploadError.message)
+        setUploading(false)
+        return
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('attachments')
+        .getPublicUrl(fileName)
+
+      attachmentUrl = urlData.publicUrl
+      setUploading(false)
+    }
+
     const { error } = await supabase.from('calendar_events').insert({
       user_id: user.id,
       type,
       title,
       description,
       event_date: eventDate,
+      event_time: eventTime || null,
       status: 'ongoing',
+      attachment_url: attachmentUrl,
     })
 
     if (error) {
@@ -62,6 +91,8 @@ function CalendarSection() {
       setTitle('')
       setDescription('')
       setEventDate('')
+      setEventTime('')
+      setFile(null)
       setErrorMsg('')
       fetchEvents()
     }
@@ -95,17 +126,29 @@ function CalendarSection() {
           onChange={(e) => setEventDate(e.target.value)}
           className="border p-2 rounded"
         />
+        <input
+          type="time"
+          value={eventTime}
+          onChange={(e) => setEventTime(e.target.value)}
+          className="border p-2 rounded"
+        />
         <textarea
           placeholder="Description (optional)"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="border p-2 rounded"
         />
+        <input
+          type="file"
+          onChange={(e) => setFile(e.target.files?.[0] || null)}
+          className="border p-2 rounded"
+        />
         <button
           onClick={handleAddEvent}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
+          disabled={uploading}
+          className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
         >
-          Add
+          {uploading ? 'Uploading...' : 'Add'}
         </button>
         {errorMsg && <p className="text-red-600">{errorMsg}</p>}
       </div>
@@ -114,7 +157,20 @@ function CalendarSection() {
         {events.map((event) => (
           <li key={event.id} className="border p-2 rounded">
             <span className="font-semibold">[{event.type}]</span> {event.title} —{' '}
-            {event.event_date} <span className="text-gray-500">({event.status})</span>
+            {event.event_date}
+            {event.event_time && ` at ${event.event_time}`}{' '}
+            <span className="text-gray-500">({event.status})</span>
+            {event.attachment_url && (
+              <div className="mt-1">
+                <a>
+                  href={event.attachment_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 underline text-sm"
+                  View attachment
+                </a>
+              </div>
+            )}
           </li>
         ))}
       </ul>

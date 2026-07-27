@@ -3,6 +3,7 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Settings from './pages/Settings'
 import ProtectedRoute from './components/ProtectedRoute'
+import Notifications from './components/Notifications'
 import { supabase } from './supabaseClient'
 
 function NavBar() {
@@ -30,6 +31,7 @@ function App() {
     <BrowserRouter>
       <div className="dark:bg-gray-900 dark:text-white min-h-screen">
         <NavBar />
+        <Notifications />
         <Routes>
           <Route path="/" element={<Login />} />
           <Route
