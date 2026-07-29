@@ -10,181 +10,279 @@ interface CalendarEvent {
   event_time: string | null
   status: string
   attachment_url: string | null
+  color: string
 }
 
 function CalendarSection() {
   const [events, setEvents] = useState<CalendarEvent[]>([])
+  const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+
   const [title, setTitle] = useState('')
   const [type, setType] = useState('event')
-  const [eventDate, setEventDate] = useState('')
   const [eventTime, setEventTime] = useState('')
   const [description, setDescription] = useState('')
+  const [color, setColor] = useState('#8b7cf6')
   const [file, setFile] = useState<File | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
   const [uploading, setUploading] = useState(false)
 
   const fetchEvents = async () => {
-    const { data, error } = await supabase
-      .from('calendar_events')
-      .select('*')
-      .order('event_date', { ascending: true })
-
-    if (error) {
-      setErrorMsg(error.message)
-    } else {
-      setEvents(data || [])
-    }
+    const { data } = await supabase.from('calendar_events').select('*')
+    setEvents(data || [])
   }
 
   useEffect(() => {
     fetchEvents()
   }, [])
 
-  const handleAddEvent = async () => {
-    if (!title || !eventDate) {
+  const year = currentMonth.getFullYear()
+  const month = currentMonth.getMonth()
+  const firstDay = new Date(year, month, 1)
+  const lastDay = new Date(year, month + 1, 0)
+  const startWeekday = firstDay.getDay()
+  const daysInMonth = lastDay.getDate()
+
+  const cells: (string | null)[] = []
+  for (let i = 0; i < startWeekday; i++) cells.push(null)
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push(`${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`)
+  }
+
+  const eventsForDate = (date: string) => events.filter((e) => e.event_date === date)
+
+  const handleStatusChange = async (eventId: string, newStatus: string) => {
+    const { error } = await supabase
+      .from('calendar_events')
+      .update({ status: newStatus })
+      .eq('id', eventId)
+
+    if (error) setErrorMsg(error.message)
+    else fetchEvents()
+  }
+
+  const resetForm = () => {
+    setTitle('')
+    setDescription('')
+    setEventTime('')
+    setColor('#8b7cf6')
+    setFile(null)
+    setEditingId(null)
+    setErrorMsg('')
+  }
+
+  const startEditing = (e: CalendarEvent) => {
+    setEditingId(e.id)
+    setTitle(e.title)
+    setType(e.type)
+    setEventTime(e.event_time || '')
+    setDescription(e.description || '')
+    setColor(e.color)
+    setFile(null)
+  }
+
+  const handleDeleteEvent = async (eventId: string) => {
+    const { error } = await supabase.from('calendar_events').delete().eq('id', eventId)
+    if (error) setErrorMsg(error.message)
+    else fetchEvents()
+  }
+
+  const handleSaveEvent = async () => {
+    if (!title || !selectedDate) {
       setErrorMsg('Title and date are required')
       return
     }
-
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      setErrorMsg('You must be logged in')
-      return
-    }
+    if (!user) return
 
     let attachmentUrl: string | null = null
-
     if (file) {
       setUploading(true)
       const fileExt = file.name.split('.').pop()
       const fileName = `${user.id}/${Date.now()}.${fileExt}`
-
-      const { error: uploadError } = await supabase.storage
-        .from('attachments')
-        .upload(fileName, file)
-
+      const { error: uploadError } = await supabase.storage.from('attachments').upload(fileName, file)
       if (uploadError) {
-        setErrorMsg('Upload failed: ' + uploadError.message)
+        setErrorMsg(uploadError.message)
         setUploading(false)
         return
       }
-
-      const { data: urlData } = supabase.storage
-        .from('attachments')
-        .getPublicUrl(fileName)
-
+      const { data: urlData } = supabase.storage.from('attachments').getPublicUrl(fileName)
       attachmentUrl = urlData.publicUrl
       setUploading(false)
     }
 
-    const { error } = await supabase.from('calendar_events').insert({
-      user_id: user.id,
-      type,
-      title,
-      description,
-      event_date: eventDate,
-      event_time: eventTime || null,
-      status: 'ongoing',
-      attachment_url: attachmentUrl,
-    })
+    if (editingId) {
+      const updatePayload: any = {
+        type,
+        title,
+        description,
+        event_time: eventTime || null,
+        color,
+      }
+      if (attachmentUrl) updatePayload.attachment_url = attachmentUrl
 
-    if (error) {
-      setErrorMsg(error.message)
+      const { error } = await supabase
+        .from('calendar_events')
+        .update(updatePayload)
+        .eq('id', editingId)
+
+      if (error) {
+        setErrorMsg(error.message)
+      } else {
+        resetForm()
+        fetchEvents()
+      }
     } else {
-      setTitle('')
-      setDescription('')
-      setEventDate('')
-      setEventTime('')
-      setFile(null)
-      setErrorMsg('')
-      fetchEvents()
+      const { error } = await supabase.from('calendar_events').insert({
+        user_id: user.id,
+        type,
+        title,
+        description,
+        event_date: selectedDate,
+        event_time: eventTime || null,
+        status: 'ongoing',
+        attachment_url: attachmentUrl,
+        color,
+      })
+
+      if (error) {
+        setErrorMsg(error.message)
+      } else {
+        resetForm()
+        fetchEvents()
+      }
     }
   }
 
+  const monthLabel = currentMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+
   return (
     <div>
-      <h2 className="text-lg font-semibold mb-3 text-text-primary">Calendar</h2>
+      <h2 className="text-lg font-semibold mb-3" style={{ color: '#5a6141' }}>Calendar</h2>
 
-      <div className="flex flex-col gap-2 mb-4">
-        <select
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-          className="bg-void border border-border-subtle p-2 rounded text-text-primary text-sm"
-        >
-          <option value="event">Event</option>
-          <option value="task">Task</option>
-          <option value="holiday">Holiday</option>
-          <option value="note">Note</option>
-        </select>
-
-        <input
-          type="text"
-          placeholder="Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="bg-void border border-border-subtle p-2 rounded text-text-primary placeholder:text-text-muted text-sm"
-        />
-
-        <input
-          type="date"
-          value={eventDate}
-          onChange={(e) => setEventDate(e.target.value)}
-          className="bg-void border border-border-subtle p-2 rounded text-text-primary text-sm"
-        />
-
-        <input
-          type="time"
-          value={eventTime}
-          onChange={(e) => setEventTime(e.target.value)}
-          className="bg-void border border-border-subtle p-2 rounded text-text-primary text-sm"
-        />
-
-        <textarea
-          placeholder="Description (optional)"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="bg-void border border-border-subtle p-2 rounded text-text-primary placeholder:text-text-muted text-sm"
-        />
-
-        <input
-          type="file"
-          onChange={(e) => setFile(e.target.files?.[0] || null)}
-          className="text-text-muted text-sm"
-        />
-
-        <button
-          onClick={handleAddEvent}
-          disabled={uploading}
-          className="bg-trace text-white px-4 py-2 rounded-lg hover:bg-trace-dim transition-colors disabled:opacity-50 text-sm"
-        >
-          {uploading ? 'Uploading...' : 'Add'}
-        </button>
-
-        {errorMsg && <p className="text-red-400 text-sm">{errorMsg}</p>}
+      <div className="flex items-center justify-between mb-2">
+        <button onClick={() => setCurrentMonth(new Date(year, month - 1, 1))} className="text-text-muted text-sm px-2">‹</button>
+        <p className="text-sm font-medium text-text-primary">{monthLabel}</p>
+        <button onClick={() => setCurrentMonth(new Date(year, month + 1, 1))} className="text-text-muted text-sm px-2">›</button>
       </div>
 
-      <ul className="space-y-2">
-        {events.map((event) => (
-          <li key={event.id} className="bg-void border border-border-subtle p-3 rounded-lg text-sm">
-            <span className="font-medium text-trace">[{event.type}]</span>{' '}
-            <span className="text-text-primary">{event.title}</span> —{' '}
-            <span className="text-text-muted">{event.event_date}</span>
-            {event.event_time && <span className="text-text-muted"> at {event.event_time}</span>}{' '}
-            <span className="text-text-muted">({event.status})</span>
-            {event.attachment_url && (
-              <div className="mt-1">
-                <a>
-                  href={event.attachment_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-trace underline text-xs"
-                  View attachment
-                </a>
+      <div className="grid grid-cols-7 text-center text-[10px] text-text-muted mb-1">
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <div key={i}>{d}</div>)}
+      </div>
+
+      <div className="grid grid-cols-7 gap-1 mb-3">
+        {cells.map((date, i) => {
+          const dayEvents = date ? eventsForDate(date) : []
+          return (
+            <div
+              key={i}
+              onClick={() => {
+                if (date) {
+                  setSelectedDate(date)
+                  resetForm()
+                }
+              }}
+              className={`h-14 rounded border text-[10px] p-1 cursor-pointer overflow-hidden
+                ${date ? 'border-border-subtle bg-void hover:bg-surface-hover' : 'border-transparent'}
+                ${selectedDate === date ? 'ring-1 ring-trace' : ''}`}
+            >
+              {date && <span className="text-text-muted">{parseInt(date.split('-')[2])}</span>}
+              <div className="flex flex-col gap-0.5 mt-0.5">
+                {dayEvents.slice(0, 2).map((e) => (
+                  <div key={e.id} className="truncate rounded px-1" style={{ backgroundColor: e.color, color: '#fff' }}>
+                    {e.title}
+                  </div>
+                ))}
+                {dayEvents.length > 2 && <span className="text-text-muted">+{dayEvents.length - 2}</span>}
               </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {selectedDate && (
+        <div className="bg-void border border-border-subtle rounded-lg p-3">
+          <div className="flex justify-between items-center mb-2">
+            <p className="text-sm font-medium text-text-primary">{selectedDate}</p>
+            <button onClick={() => { setSelectedDate(null); resetForm() }} className="text-text-muted text-xs">✕</button>
+          </div>
+
+          <ul className="space-y-2 mb-3">
+            {eventsForDate(selectedDate).map((e) => (
+              <li key={e.id} className="text-xs flex flex-col gap-1 border-b border-border-subtle pb-2 last:border-0">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: e.color }} />
+                    <span className="text-text-primary">[{e.type}] {e.title}</span>
+                    {e.attachment_url && (
+                      <a href={e.attachment_url} target="_blank" rel="noopener noreferrer" className="text-trace underline">
+                        file
+                      </a>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => startEditing(e)} className="text-trace text-[10px]">Edit</button>
+                    <button onClick={() => handleDeleteEvent(e.id)} className="text-red-400 text-[10px]">Delete</button>
+                  </div>
+                </div>
+
+                {e.type !== 'note' && (
+                  <div className="flex gap-1 ml-4">
+                    {['ongoing', 'completed', 'cancelled'].map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => handleStatusChange(e.id, s)}
+                        className={`px-2 py-0.5 rounded text-[10px] capitalize transition-colors ${
+                          e.status === s
+                            ? s === 'ongoing'
+                              ? 'bg-purple-500 text-white'
+                              : s === 'completed'
+                              ? 'bg-green-500 text-white'
+                              : 'bg-red-500 text-white'
+                            : 'bg-surface-hover text-text-muted hover:bg-border-subtle'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+
+          <div className="flex flex-col gap-2">
+            {editingId && (
+              <p className="text-[10px] text-trace">Editing — Save to update, or ✕ above to cancel</p>
             )}
-          </li>
-        ))}
-      </ul>
+            <div className="flex gap-2">
+              <select value={type} onChange={(e) => setType(e.target.value)} className="bg-surface border border-border-subtle p-1 rounded text-text-primary text-xs flex-1">
+                <option value="event">Event</option>
+                <option value="task">Task</option>
+                <option value="holiday">Holiday</option>
+                <option value="note">Note</option>
+              </select>
+              <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="w-8 h-8 rounded border border-border-subtle" />
+            </div>
+            <input type="text" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} className="bg-surface border border-border-subtle p-1 rounded text-text-primary text-xs" />
+            <input type="time" value={eventTime} onChange={(e) => setEventTime(e.target.value)} className="bg-surface border border-border-subtle p-1 rounded text-text-primary text-xs" />
+            <textarea placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} className="bg-surface border border-border-subtle p-1 rounded text-text-primary text-xs" />
+            <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="text-text-muted text-xs" />
+            <div className="flex gap-2">
+              <button onClick={handleSaveEvent} disabled={uploading} className="bg-trace text-white px-3 py-1 rounded text-xs hover:bg-trace-dim flex-1">
+                {uploading ? 'Uploading...' : editingId ? 'Save Changes' : 'Add'}
+              </button>
+              {editingId && (
+                <button onClick={resetForm} className="bg-surface-hover text-text-muted px-3 py-1 rounded text-xs">
+                  Cancel
+                </button>
+              )}
+            </div>
+            {errorMsg && <p className="text-red-400 text-xs">{errorMsg}</p>}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

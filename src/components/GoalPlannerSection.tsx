@@ -106,9 +106,7 @@ function GoalPlannerSection() {
 
   return (
     <div>
-      <h2 className="text-lg font-semibold mb-3 text-text-primary">
-        Goal Planner
-      </h2>
+      <h2 className="text-lg font-semibold mb-3" style={{ color: '#5a6141' }}>Goal Planner</h2>
 
       <div className="flex flex-col gap-2 mb-4">
         <input

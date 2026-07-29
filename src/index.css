@@ -14,16 +14,31 @@
 }
 
 .dark {
-  --color-void: #0a0a0f;
+  --color-void: #000000;
   --color-surface: #13131a;
   --color-surface-hover: #1c1c26;
   --color-border-subtle: #26262f;
-  --color-trace: #8b7cf6;
-  --color-trace-dim: #6b5cd6;
-  --color-text-primary: #e8e6f0;
+  --color-trace: #1f201c;
+  --color-trace-dim: #5a6141;
+  --color-text-primary: #ffffff;
   --color-text-muted: #8b8a99;
 }
 
+.font-display {
+  font-family: 'Montserrat', sans-serif;
+}
+
 body {
-  font-family: 'Segoe UI', Tahoma, sans-serif;
+  font-family: 'Montserrat', 'Segoe UI', Tahoma, sans-serif;
+}
+
+.home-fixed {
+  --color-void: #000000;
+  --color-surface: #13131a;
+  --color-surface-hover: #1c1c26;
+  --color-border-subtle: #26262f;
+  --color-trace: #ffffff;
+  --color-trace-dim: #5a6141;
+  --color-text-primary: #ffffff;
+  --color-text-muted: #8b8a99;
 }

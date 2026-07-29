@@ -1,8 +1,11 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 
 function Login() {
+  const location = useLocation()
+  const isSignup = location.pathname === '/signup'
+
   const [name, setName] = useState('')
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
@@ -31,7 +34,7 @@ function Login() {
       }
     }
 
-    setErrorMsg('Check your email to confirm sign up!')
+    setErrorMsg('Check your email to confirm sign up.')
   }
 
   const handleLogin = async () => {
@@ -44,25 +47,35 @@ function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-void">
+    <div className="min-h-screen flex items-center justify-center bg-void px-4">
       <div className="w-full max-w-sm p-8 bg-surface border border-border-subtle rounded-xl">
-        <h1 className="text-2xl font-semibold mb-6 text-trace">vtryse</h1>
+        <Link to="/" className="block text-2xl font-semibold mb-6 text-trace-dim">
+          VTryse
+        </Link>
+
+        <h2 className="text-lg font-medium mb-4 text-text-primary">
+          {isSignup ? 'Create your account' : 'Welcome back'}
+        </h2>
 
         <div className="flex flex-col gap-3">
-          <input
-            type="text"
-            placeholder="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="bg-void border border-border-subtle p-2 rounded text-text-primary placeholder:text-text-muted"
-          />
-          <input
-            type="text"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="bg-void border border-border-subtle p-2 rounded text-text-primary placeholder:text-text-muted"
-          />
+          {isSignup && (
+            <>
+              <input
+                type="text"
+                placeholder="Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="bg-void border border-border-subtle p-2 rounded text-text-primary placeholder:text-text-muted"
+              />
+              <input
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="bg-void border border-border-subtle p-2 rounded text-text-primary placeholder:text-text-muted"
+              />
+            </>
+          )}
           <input
             type="email"
             placeholder="Email"
@@ -79,22 +92,32 @@ function Login() {
           />
         </div>
 
-        <div className="flex gap-2 mt-4">
-          <button
-            onClick={handleLogin}
-            className="flex-1 bg-trace text-white px-4 py-2 rounded-lg hover:bg-trace-dim transition-colors"
-          >
-            Log In
-          </button>
-          <button
-            onClick={handleSignUp}
-            className="flex-1 bg-surface-hover text-text-primary px-4 py-2 rounded-lg hover:bg-border-subtle transition-colors"
-          >
-            Sign Up
-          </button>
-        </div>
+        <button
+          onClick={isSignup ? handleSignUp : handleLogin}
+          className="w-full mt-4 bg-trace text-white px-4 py-2 rounded-lg hover:bg-trace-dim transition-colors"
+        >
+          {isSignup ? 'Sign Up' : 'Log In'}
+        </button>
 
         {errorMsg && <p className="mt-3 text-sm text-red-400">{errorMsg}</p>}
+
+        <p className="mt-4 text-sm text-text-muted text-center">
+          {isSignup ? (
+            <>
+              Already have an account?{' '}
+              <Link to="/login" className="text-trace-dim hover:underline">
+                Log in
+              </Link>
+            </>
+          ) : (
+            <>
+              Don't have an account yet?{' '}
+              <Link to="/signup" className="text-trace-dim hover:underline">
+                Sign up
+              </Link>
+            </>
+          )}
+        </p>
       </div>
     </div>
   )
