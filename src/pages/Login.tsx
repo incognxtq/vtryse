@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 
@@ -12,6 +12,13 @@ function Login() {
   const [password, setPassword] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
   const navigate = useNavigate()
+
+  useEffect(() => {
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('type') === 'signup') {
+    setErrorMsg('Email confirmed! You can now log in.')
+  }
+    }, [])
 
   const handleSignUp = async () => {
     const { data, error } = await supabase.auth.signUp({ email, password })
