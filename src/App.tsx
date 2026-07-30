@@ -4,7 +4,6 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Settings from './pages/Settings'
 import ProtectedRoute from './components/ProtectedRoute'
-import Notifications from './components/Notifications'
 import Sidebar from './components/Sidebar'
 import { useTheme } from './hooks/useTheme'
 
