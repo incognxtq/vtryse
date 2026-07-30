@@ -15,7 +15,6 @@ function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-void text-text-primary">
       {showSidebar && <Sidebar />}
-      {showSidebar && <Notifications />}
       <main className={showSidebar ? 'md:ml-56 pt-14 md:pt-0' : ''}>{children}</main>
     </div>
   )

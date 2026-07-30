@@ -44,8 +44,21 @@ function Notifications() {
 
   useEffect(() => {
     checkUpcoming()
-    const interval = setInterval(checkUpcoming, 15000) // recheck every 15 seconds
-    return () => clearInterval(interval)
+
+    const channel = supabase
+      .channel('calendar_events_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'calendar_events' },
+        () => {
+          checkUpcoming()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const handleDismiss = (id: string) => {
@@ -54,34 +67,42 @@ function Notifications() {
 
   const visibleReminders = reminders.filter((r) => !dismissed.includes(r.id))
 
-  if (visibleReminders.length === 0) return null
-
   return (
-    <div className="fixed top-4 right-4 space-y-2 z-50">
-      {visibleReminders.map((reminder) => (
-        <div
-          key={reminder.id}
-          className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded shadow-lg max-w-xs"
-        >
-          <div className="flex justify-between items-start gap-2">
-            <div>
-              <p className="font-semibold text-sm">
-                [{reminder.type}] {reminder.title}
-              </p>
-              <p className="text-xs">
-                Due: {reminder.event_date}
-                {reminder.event_time && ` at ${reminder.event_time}`}
-              </p>
-            </div>
-            <button
-              onClick={() => handleDismiss(reminder.id)}
-              className="text-yellow-800 font-bold text-sm"
+    <div className="flex-1 overflow-y-auto min-h-0">
+      <p className="text-xs font-medium text-text-muted px-4 mb-2 uppercase tracking-wide">
+        Reminders
+      </p>
+
+      {visibleReminders.length === 0 ? (
+        <p className="text-xs text-text-muted px-4">Nothing due soon</p>
+      ) : (
+        <div className="flex flex-col gap-2 px-2">
+          {visibleReminders.map((reminder) => (
+            <div
+              key={reminder.id}
+              className="bg-surface-hover border border-border-subtle rounded-lg px-3 py-2"
             >
-              ✕
-            </button>
-          </div>
+              <div className="flex justify-between items-start gap-2">
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-text-primary truncate">
+                    [{reminder.type}] {reminder.title}
+                  </p>
+                  <p className="text-[10px] text-text-muted">
+                    {reminder.event_date}
+                    {reminder.event_time && ` at ${reminder.event_time}`}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleDismiss(reminder.id)}
+                  className="text-text-muted text-xs flex-shrink-0"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
+      )}
     </div>
   )
 }

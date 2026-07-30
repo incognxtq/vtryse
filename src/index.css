@@ -7,6 +7,7 @@
   --color-surface: #ffffff;
   --color-surface-hover: #eeeef2;
   --color-border-subtle: #e0e0e6;
+  --color-sidebar-border: #5a6141;
   --color-trace: #7c5cf0;
   --color-trace-dim: #6b4cd6;
   --color-text-primary: #1a1a24;
@@ -15,10 +16,11 @@
 
 .dark {
   --color-void: #000000;
-  --color-surface: #13131a;
+  --color-surface: #000000;
   --color-surface-hover: #1c1c26;
   --color-border-subtle: #26262f;
-  --color-trace: #1f201c;
+  --color-sidebar-border: #ffffff;
+  --color-trace: #a5b17c;
   --color-trace-dim: #5a6141;
   --color-text-primary: #ffffff;
   --color-text-muted: #8b8a99;

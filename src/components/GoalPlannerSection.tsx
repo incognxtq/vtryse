@@ -124,7 +124,7 @@ function GoalPlannerSection() {
         />
         <button
           onClick={handleAddGoal}
-          className="bg-trace text-white px-4 py-2 rounded-lg hover:bg-trace-dim transition-colors text-sm"
+          className="bg-trace-dim text-white px-4 py-2 rounded-lg hover:bg-trace-dim transition-colors text-sm"
         >
           Add Goal
         </button>

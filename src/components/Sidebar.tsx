@@ -1,34 +1,61 @@
-import { useState } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { supabase } from '../supabaseClient'
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { supabase } from "../supabaseClient";
+import Notifications from "./Notifications";
 
 function Sidebar() {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const [isOpen, setIsOpen] = useState(false)
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [isOpen, setIsOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from("profiles")
+        .select("name, username, avatar_url")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (data) {
+        setName(data.name || "");
+        setUsername(data.username || "");
+        setAvatarUrl(data.avatar_url || "");
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    navigate('/')
-  }
+    await supabase.auth.signOut();
+    navigate("/");
+  };
 
   const linkClass = (path: string) =>
     `block px-4 py-2 rounded-lg text-sm transition-colors ${
       location.pathname === path
-        ? 'bg-trace/20 text-trace font-medium'
-        : 'text-text-muted hover:bg-surface-hover hover:text-text-primary'
-    }`
+        ? "bg-trace/20 text-trace font-medium"
+        : "text-text-muted hover:bg-surface-hover hover:text-text-primary"
+    }`;
 
   return (
     <>
       {/* Mobile top bar */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-surface border-b border-border-subtle flex items-center justify-between px-4 z-50">
-        <h1 className="text-lg font-semibold text-trace tracking-wide">vtryse</h1>
+        <h1 className="text-lg font-semibold text-trace tracking-wide">
+          VTryse
+        </h1>
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="text-text-primary text-2xl leading-none"
         >
-          {isOpen ? '✕' : '☰'}
+          {isOpen ? "✕" : "☰"}
         </button>
       </div>
 
@@ -42,22 +69,59 @@ function Sidebar() {
 
       {/* Sidebar */}
       <aside
-        className={`w-56 h-screen bg-surface border-r border-border-subtle flex flex-col p-4 fixed left-0 top-0 z-50 transition-transform duration-200
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}
+        className={`w-56 h-screen bg-surface border-r border-sidebar-border flex flex-col p-4 fixed left-0 top-0 z-50 transition-transform duration-200
+        ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
       >
-        <div className="mb-8 px-2 hidden md:block">
-          <h1 className="text-lg font-semibold text-trace tracking-wide">vtryse</h1>
+        <div className="mb-6 px-2 hidden md:block">
+          <h1 className="text-xl font-semibold text-primary tracking-wide">
+            VTryse
+          </h1>
         </div>
         <div className="mb-4 md:hidden h-10" />
 
-        <nav className="flex flex-col gap-1 flex-1">
-          <Link to="/dashboard" className={linkClass('/dashboard')} onClick={() => setIsOpen(false)}>
+        {/* Profile picture + name + username */}
+        <div className="flex items-center gap-2 px-2 mb-6">
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt="Profile"
+              className="w-9 h-9 rounded-full object-cover border border-border-subtle flex-shrink-0"
+            />
+          ) : (
+            <div className="w-9 h-9 rounded-full bg-surface-hover border border-border-subtle flex items-center justify-center text-text-muted text-xs flex-shrink-0">
+              {name ? name.charAt(0).toUpperCase() : "?"}
+            </div>
+          )}
+          <div className="flex flex-col min-w-0">
+            <span className="text-sm font-medium text-text-primary truncate">
+              {name || "User"}
+            </span>
+            {username && (
+              <span className="text-xs text-text-muted truncate">
+                {username}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <nav className="flex flex-col gap-1 mb-6">
+          <Link
+            to="/dashboard"
+            className={linkClass("/dashboard")}
+            onClick={() => setIsOpen(false)}
+          >
             Dashboard
           </Link>
-          <Link to="/settings" className={linkClass('/settings')} onClick={() => setIsOpen(false)}>
+          <Link
+            to="/settings"
+            className={linkClass("/settings")}
+            onClick={() => setIsOpen(false)}
+          >
             Settings
           </Link>
         </nav>
+
+        <Notifications />
 
         <button
           onClick={handleLogout}
@@ -67,7 +131,7 @@ function Sidebar() {
         </button>
       </aside>
     </>
-  )
+  );
 }
 
-export default Sidebar
+export default Sidebar;

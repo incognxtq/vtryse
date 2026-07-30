@@ -15,7 +15,7 @@ export function useTheme() {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        applyTheme('system')
+        applyTheme('dark')
         return
       }
 
@@ -23,9 +23,9 @@ export function useTheme() {
         .from('profiles')
         .select('theme')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
 
-      applyTheme(data?.theme || 'system')
+      applyTheme(data?.theme || 'dark')
     }
 
     init()

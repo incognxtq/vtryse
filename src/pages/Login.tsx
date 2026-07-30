@@ -14,34 +14,30 @@ function Login() {
   const navigate = useNavigate()
 
   useEffect(() => {
-  const params = new URLSearchParams(window.location.search)
-  if (params.get('type') === 'signup') {
-    setErrorMsg('Email confirmed! You can now log in.')
-  }
-    }, [])
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('type') === 'signup') {
+      setErrorMsg('Email confirmed! You can now log in.')
+    }
+  }, [])
 
   const handleSignUp = async () => {
-    const { data, error } = await supabase.auth.signUp({ email, password })
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name,
+          username,
+        },
+      },
+    })
 
     if (error) {
       setErrorMsg(error.message)
       return
     }
 
-    if (data.user) {
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: data.user.id,
-        name,
-        username,
-      })
-
-      if (profileError) {
-        setErrorMsg(profileError.message)
-        return
-      }
-    }
-
-    setErrorMsg('Check your email to confirm sign up.')
+    setErrorMsg('Check your email to confirm sign up!')
   }
 
   const handleLogin = async () => {

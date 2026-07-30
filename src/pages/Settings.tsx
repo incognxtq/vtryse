@@ -5,7 +5,7 @@ function Settings() {
   const [name, setName] = useState('')
   const [username, setUsername] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
-  const [theme, setThemeState] = useState('system')
+  const [theme, setThemeState] = useState('dark')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [uploading, setUploading] = useState(false)
@@ -29,7 +29,7 @@ function Settings() {
       setName(data.name || '')
       setUsername(data.username || '')
       setAvatarUrl(data.avatar_url || '')
-      setThemeState(data.theme || 'system')
+      setThemeState(data.theme || 'dark')
     }
   }
 
@@ -133,12 +133,34 @@ function Settings() {
     }
   }
 
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm(
+      'Are you sure you want to permanently delete your account? This cannot be undone.'
+    )
+    if (!confirmed) return
+
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+
+    const { error } = await supabase.functions.invoke('delete-account', {
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    })
+
+    if (error) {
+      setErrorMsg('Failed to delete account: ' + error.message)
+    } else {
+      await supabase.auth.signOut()
+      window.location.href = '/'
+    }
+  }
+
   return (
     <div className="p-8 max-w-md">
       <h1 className="text-2xl font-semibold mb-8 text-text-primary">Settings</h1>
 
-      {/* Account */}
-      <h2 className="text-lg font-semibold mb-3 text-text-primary">Account</h2>
+      <h2 className="text-lg font-semibold mb-3 text-header">Account</h2>
       <div className="flex flex-col gap-3 mb-8">
         <div className="flex items-center gap-4">
           {avatarUrl ? (
@@ -188,8 +210,7 @@ function Settings() {
         {successMsg && <p className="text-green-400 text-sm">{successMsg}</p>}
       </div>
 
-      {/* Privacy */}
-      <h2 className="text-lg font-semibold mb-3 text-text-primary">Privacy</h2>
+      <h2 className="text-lg font-semibold mb-3 text-header">Privacy</h2>
       <div className="flex flex-col gap-3 mb-8">
         <input
           type="password"
@@ -218,9 +239,8 @@ function Settings() {
         )}
       </div>
 
-      {/* Theme */}
-      <h2 className="text-lg font-semibold mb-3 text-text-primary">Theme</h2>
-      <div className="flex gap-2">
+      <h2 className="text-lg font-semibold mb-3 text-header">Theme</h2>
+      <div className="flex gap-2 mb-8">
         <button
           onClick={() => handleThemeChange('light')}
           className={`px-4 py-2 rounded text-sm ${theme === 'light' ? 'bg-trace text-white' : 'bg-surface-hover text-text-muted'}`}
@@ -238,6 +258,16 @@ function Settings() {
           className={`px-4 py-2 rounded text-sm ${theme === 'system' ? 'bg-trace text-white' : 'bg-surface-hover text-text-muted'}`}
         >
           System
+        </button>
+      </div>
+
+      <div className="pt-6 border-t border-border-subtle">
+        <h2 className="text-lg font-semibold mb-3 text-red-400">Danger Zone</h2>
+        <button
+          onClick={handleDeleteAccount}
+          className="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700 transition-colors"
+        >
+          Delete Account
         </button>
       </div>
     </div>
