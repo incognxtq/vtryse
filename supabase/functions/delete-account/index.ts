@@ -1,6 +1,15 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   const authHeader = req.headers.get('Authorization')!
 
   const supabaseClient = createClient(
@@ -12,7 +21,10 @@ Deno.serve(async (req) => {
   const { data: { user } } = await supabaseClient.auth.getUser()
 
   if (!user) {
-    return new Response(JSON.stringify({ error: 'Not authenticated' }), { status: 401 })
+    return new Response(JSON.stringify({ error: 'Not authenticated' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 
   const supabaseAdmin = createClient(
@@ -23,10 +35,13 @@ Deno.serve(async (req) => {
   const { error } = await supabaseAdmin.auth.admin.deleteUser(user.id)
 
   if (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 400 })
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 
   return new Response(JSON.stringify({ success: true }), {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
 })
