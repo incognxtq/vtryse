@@ -13,6 +13,11 @@ function Settings() {
   const [successMsg, setSuccessMsg] = useState('')
   const [passwordMsg, setPasswordMsg] = useState('')
 
+  const [shareCode, setShareCode] = useState('')
+  const [showAcceptInput, setShowAcceptInput] = useState(false)
+  const [redeemCode, setRedeemCode] = useState('')
+  const [shareMsg, setShareMsg] = useState('')
+
   const fetchProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
@@ -130,6 +135,32 @@ function Settings() {
       setPasswordMsg('Password updated successfully!')
       setNewPassword('')
       setConfirmPassword('')
+    }
+  }
+
+  const handleShareWithOthers = async () => {
+    const { data, error } = await supabase.rpc('create_share_code')
+    if (error) {
+      setShareMsg('Failed to generate code: ' + error.message)
+    } else {
+      setShareCode(data)
+      setShareMsg('')
+    }
+  }
+
+  const handleAcceptSharing = async () => {
+    if (!redeemCode) {
+      setShareMsg('Enter a code first')
+      return
+    }
+    const { data, error } = await supabase.rpc('redeem_share_code', {
+      input_code: redeemCode,
+    })
+    if (error || !data) {
+      setShareMsg('Invalid or expired code')
+    } else {
+      setShareMsg('Successfully joined the shared dashboard! Refreshing...')
+      setTimeout(() => window.location.reload(), 1500)
     }
   }
 
@@ -259,6 +290,59 @@ function Settings() {
         >
           System
         </button>
+      </div>
+
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold mb-3 text-header">Sharing</h2>
+        <div className="flex flex-col gap-3">
+          <div>
+            <button
+              onClick={handleShareWithOthers}
+              className="bg-trace text-white px-4 py-2 rounded text-sm hover:bg-trace-dim transition-colors"
+            >
+              Share with Others
+            </button>
+            {shareCode && (
+              <div className="mt-2 bg-void border border-border-subtle rounded p-3">
+                <p className="text-xs text-text-muted mb-1">Share this code:</p>
+                <p className="text-lg font-mono font-bold text-trace tracking-widest">{shareCode}</p>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <button
+              onClick={() => setShowAcceptInput(!showAcceptInput)}
+              className="bg-surface-hover text-text-primary border border-border-subtle px-4 py-2 rounded text-sm hover:bg-border-subtle transition-colors"
+            >
+              Accept Sharing
+            </button>
+            {showAcceptInput && (
+              <div className="mt-2 flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Enter code"
+                  value={redeemCode}
+                  onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
+                  maxLength={6}
+                  className="border border-border-subtle bg-surface p-2 rounded text-text-primary flex-1 font-mono tracking-widest"
+                />
+                <button
+                  onClick={handleAcceptSharing}
+                  className="bg-trace text-white px-4 py-2 rounded text-sm hover:bg-trace-dim transition-colors"
+                >
+                  Join
+                </button>
+              </div>
+            )}
+          </div>
+
+          {shareMsg && (
+            <p className={`text-sm ${shareMsg.includes('Success') ? 'text-green-400' : 'text-red-400'}`}>
+              {shareMsg}
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="pt-6 border-t border-border-subtle">

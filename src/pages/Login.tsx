@@ -97,7 +97,7 @@ function Login() {
 
         <button
           onClick={isSignup ? handleSignUp : handleLogin}
-          className="w-full mt-4 bg-trace text-white px-4 py-2 rounded-lg hover:bg-trace-dim transition-colors"
+          className="w-full mt-4 bg-trace-dim text-white px-4 py-2 rounded-lg hover:bg-trace transition-colors"
         >
           {isSignup ? 'Sign Up' : 'Log In'}
         </button>

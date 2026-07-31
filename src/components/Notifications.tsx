@@ -19,6 +19,13 @@ function getLocalDateString(date: Date) {
 function Notifications() {
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [dismissed, setDismissed] = useState<string[]>([])
+  const [notifiedIds, setNotifiedIds] = useState<string[]>([])
+
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission()
+    }
+  }, [])
 
   const checkUpcoming = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -38,6 +45,15 @@ function Notifications() {
       .eq('status', 'ongoing')
 
     if (!error && data) {
+      data.forEach((reminder) => {
+        if (!notifiedIds.includes(reminder.id) && Notification.permission === 'granted') {
+          new Notification(`[${reminder.type}] ${reminder.title}`, {
+            body: `Due: ${reminder.event_date}${reminder.event_time ? ' at ' + reminder.event_time : ''}`,
+            icon: '/VTryse_logo.png',
+          })
+          setNotifiedIds((prev) => [...prev, reminder.id])
+        }
+      })
       setReminders(data)
     }
   }

@@ -3,6 +3,7 @@ import { supabase } from '../supabaseClient'
 
 interface CalendarEvent {
   id: string
+  user_id: string
   type: string
   title: string
   description: string | null
@@ -15,6 +16,8 @@ interface CalendarEvent {
 
 function CalendarSection() {
   const [events, setEvents] = useState<CalendarEvent[]>([])
+  const [profileNames, setProfileNames] = useState<Record<string, string>>({})
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -28,13 +31,34 @@ function CalendarSection() {
   const [errorMsg, setErrorMsg] = useState('')
   const [uploading, setUploading] = useState(false)
 
+  const notifyDataChanged = () => {
+    window.dispatchEvent(new Event('calendar-data-changed'))
+  }
+
   const fetchEvents = async () => {
     const { data } = await supabase.from('calendar_events').select('*')
     setEvents(data || [])
   }
 
+  const fetchProfileNames = async () => {
+    const { data } = await supabase.from('profiles').select('id, name')
+    if (data) {
+      const map: Record<string, string> = {}
+      data.forEach((p) => {
+        map[p.id] = p.name || 'Someone'
+      })
+      setProfileNames(map)
+    }
+  }
+
   useEffect(() => {
-    fetchEvents()
+    const init = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setCurrentUserId(user?.id || null)
+      fetchEvents()
+      fetchProfileNames()
+    }
+    init()
   }, [])
 
   const year = currentMonth.getFullYear()
@@ -58,8 +82,12 @@ function CalendarSection() {
       .update({ status: newStatus })
       .eq('id', eventId)
 
-    if (error) setErrorMsg(error.message)
-    else fetchEvents()
+    if (error) {
+      setErrorMsg(error.message)
+    } else {
+      fetchEvents()
+      notifyDataChanged()
+    }
   }
 
   const resetForm = () => {
@@ -84,8 +112,12 @@ function CalendarSection() {
 
   const handleDeleteEvent = async (eventId: string) => {
     const { error } = await supabase.from('calendar_events').delete().eq('id', eventId)
-    if (error) setErrorMsg(error.message)
-    else fetchEvents()
+    if (error) {
+      setErrorMsg(error.message)
+    } else {
+      fetchEvents()
+      notifyDataChanged()
+    }
   }
 
   const handleSaveEvent = async () => {
@@ -132,6 +164,7 @@ function CalendarSection() {
       } else {
         resetForm()
         fetchEvents()
+        notifyDataChanged()
       }
     } else {
       const { error } = await supabase.from('calendar_events').insert({
@@ -151,6 +184,7 @@ function CalendarSection() {
       } else {
         resetForm()
         fetchEvents()
+        notifyDataChanged()
       }
     }
   }
@@ -159,7 +193,7 @@ function CalendarSection() {
 
   return (
     <div>
-      <h2 className="text-lg font-semibold mb-3" style={{ color: '#5a6141' }}>Calendar</h2>
+      <h2 className="text-lg font-semibold mb-3 text-header">Calendar</h2>
 
       <div className="flex items-center justify-between mb-2">
         <button onClick={() => setCurrentMonth(new Date(year, month - 1, 1))} className="text-text-muted text-sm px-2">‹</button>
@@ -209,52 +243,62 @@ function CalendarSection() {
           </div>
 
           <ul className="space-y-2 mb-3">
-            {eventsForDate(selectedDate).map((e) => (
-              <li key={e.id} className="text-xs flex flex-col gap-1 border-b border-border-subtle pb-2 last:border-0">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: e.color }} />
-                    <span className="text-text-primary">[{e.type}] {e.title}</span>
-                    {e.attachment_url && (
-                      <a href={e.attachment_url} target="_blank" rel="noopener noreferrer" className="text-trace underline">
-                        file
-                      </a>
+            {eventsForDate(selectedDate).map((e) => {
+              const isOwner = e.user_id === currentUserId
+              return (
+                <li key={e.id} className="text-xs flex flex-col gap-1 border-b border-border-subtle pb-2 last:border-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: e.color }} />
+                      <span className="text-text-primary truncate">[{e.type}] {e.title}</span>
+                      {e.attachment_url && (
+                        <a href={e.attachment_url} target="_blank" rel="noopener noreferrer" className="text-trace underline flex-shrink-0">
+                          file
+                        </a>
+                      )}
+                    </div>
+                    {isOwner && (
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button onClick={() => startEditing(e)} className="text-trace text-[10px]">Edit</button>
+                        <button onClick={() => handleDeleteEvent(e.id)} className="text-red-400 text-[10px]">Delete</button>
+                      </div>
                     )}
                   </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => startEditing(e)} className="text-trace text-[10px]">Edit</button>
-                    <button onClick={() => handleDeleteEvent(e.id)} className="text-red-400 text-[10px]">Delete</button>
-                  </div>
-                </div>
 
-                {e.type !== 'note' && (
-                  <div className="flex gap-1 ml-4">
-                    {['ongoing', 'completed', 'cancelled'].map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => handleStatusChange(e.id, s)}
-                        className={`px-2 py-0.5 rounded text-[10px] capitalize transition-colors ${
-                          e.status === s
-                            ? s === 'ongoing'
-                              ? 'bg-purple-500 text-white'
-                              : s === 'completed'
-                              ? 'bg-green-500 text-white'
-                              : 'bg-red-500 text-white'
-                            : 'bg-surface-hover text-text-muted hover:bg-border-subtle'
-                        }`}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </li>
-            ))}
+                  <p className="text-[10px] text-text-muted ml-4">
+                    Added by {profileNames[e.user_id] || 'Someone'}
+                  </p>
+
+                  {e.type !== 'note' && e.type !== 'holiday' && (
+                    <div className="flex gap-1 ml-4">
+                      {['ongoing', 'completed', 'cancelled'].map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => isOwner && handleStatusChange(e.id, s)}
+                          disabled={!isOwner}
+                          className={`px-2 py-0.5 rounded text-[10px] capitalize transition-colors ${
+                            e.status === s
+                              ? s === 'ongoing'
+                                ? 'bg-purple-500 text-white'
+                                : s === 'completed'
+                                ? 'bg-green-500 text-white'
+                                : 'bg-red-500 text-white'
+                              : 'bg-surface-hover text-text-muted hover:bg-border-subtle'
+                          } ${!isOwner ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </li>
+              )
+            })}
           </ul>
 
           <div className="flex flex-col gap-2">
             {editingId && (
-              <p className="text-[10px] text-trace">Editing — Save to update, or ✕ above to cancel</p>
+              <p className="text-[10px] text-trace">Editing — Save to update, or Cancel below</p>
             )}
             <div className="flex gap-2">
               <select value={type} onChange={(e) => setType(e.target.value)} className="bg-surface border border-border-subtle p-1 rounded text-text-primary text-xs flex-1">

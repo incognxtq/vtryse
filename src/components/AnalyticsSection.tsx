@@ -13,6 +13,7 @@ interface EventRow {
   type: string
   attachment_url: string | null
   description: string | null
+  color: string
 }
 
 interface Goal {
@@ -37,7 +38,7 @@ function AnalyticsSection() {
   const fetchData = async () => {
     const { data: eventData } = await supabase
       .from('calendar_events')
-      .select('id, title, status, event_date, type, attachment_url, description')
+      .select('id, title, status, event_date, type, attachment_url, description, color')
     setEvents(eventData || [])
 
     const { data: goalData } = await supabase
@@ -64,8 +65,12 @@ function AnalyticsSection() {
       )
       .subscribe()
 
+    const handleLocalUpdate = () => fetchData()
+    window.addEventListener('calendar-data-changed', handleLocalUpdate)
+
     return () => {
       supabase.removeChannel(channel)
+      window.removeEventListener('calendar-data-changed', handleLocalUpdate)
     }
   }, [])
 
@@ -74,15 +79,25 @@ function AnalyticsSection() {
     count: events.filter((e) => e.status === status).length,
   }))
 
-  const notePoints = events
-    .filter((e) => e.type === 'note')
-    .map((e) => ({
-      date: e.event_date,
-      x: new Date(e.event_date).getTime(),
-      y: 1,
-      title: e.title,
-      raw: e,
+  const noteEvents = events.filter((e) => e.type === 'note')
+  const notesByDate: Record<string, EventRow[]> = {}
+  noteEvents.forEach((e) => {
+    if (!notesByDate[e.event_date]) notesByDate[e.event_date] = []
+    notesByDate[e.event_date].push(e)
+  })
+
+  const notePoints = Object.entries(notesByDate).flatMap(([date, notesOnDate]) =>
+    notesOnDate.map((note, index) => ({
+      x: new Date(date).getTime(),
+      y: index + 1,
+      date,
+      title: note.title,
+      color: note.color || '#8b7cf6',
+      raw: note,
     }))
+  )
+
+  const maxY = Math.max(1, ...notePoints.map((p) => p.y))
 
   const revealedTitles = selectedStatus
     ? events.filter((e) => e.status === selectedStatus).map((e) => e.title)
@@ -97,7 +112,7 @@ function AnalyticsSection() {
 
   return (
     <div>
-      <h2 className="text-lg font-semibold mb-3" style={{ color: '#5a6141' }}>
+      <h2 className="text-lg font-semibold mb-3 text-header">
         Analytics
       </h2>
 
@@ -193,21 +208,27 @@ function AnalyticsSection() {
               stroke="#8b8a99"
               fontSize={11}
             />
-            <YAxis dataKey="y" hide />
+            <YAxis
+              dataKey="y"
+              type="number"
+              domain={[0, maxY + 1]}
+              hide
+            />
             <Tooltip
               formatter={(_, __, props) => [props.payload.title, props.payload.date]}
             />
             <Scatter
               data={notePoints}
-              fill="#8b7cf6"
               cursor="pointer"
               onClick={(data: any) => {
-                const sameDay = events.filter(
-                  (e) => e.type === 'note' && e.event_date === data.raw.event_date
-                )
+                const sameDay = notesByDate[data.date] || []
                 setSelectedNotes(sameDay)
               }}
-            />
+            >
+              {notePoints.map((point, index) => (
+                <Cell key={index} fill={point.color} />
+              ))}
+            </Scatter>
           </ScatterChart>
         </ResponsiveContainer>
       </div>
@@ -222,7 +243,10 @@ function AnalyticsSection() {
           </div>
           {selectedNotes.map((note) => (
             <div key={note.id} className="border-t border-border-subtle pt-2 first:border-0 first:pt-0">
-              <p className="text-sm font-medium text-text-primary">{note.title}</p>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: note.color }} />
+                <p className="text-sm font-medium text-text-primary">{note.title}</p>
+              </div>
               {note.description && (
                 <p className="text-xs text-text-primary mt-1">{note.description}</p>
               )}
