@@ -28,6 +28,13 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: '#690000',
 }
 
+const TYPE_COLORS: Record<string, string> = {
+  event: '#800319',
+  task: '#733B45',
+  holiday: '#5C5C5C',
+  note: '#E8899A',
+}
+
 function JournalTooltip({ active, payload }: any) {
   if (!active || !payload || !payload.length) return null
   const point = payload[0].payload
@@ -102,7 +109,7 @@ function AnalyticsSection() {
       y: index + 1,
       date,
       title: note.title,
-      color: note.color || '#8b7cf6',
+      color: TYPE_COLORS[note.type] || note.color || '#8b7cf6',
       raw: note,
     }))
   )
@@ -122,20 +129,20 @@ function AnalyticsSection() {
 
   return (
     <div>
-      <h2 className="text-lg font-semibold mb-3 text-header">
+      <h2 className="text-trace-dim text-lg font-semibold mb-3 text-header">
         Analytics
       </h2>
 
       <div className="flex justify-end gap-2 mb-3">
         <button
           onClick={() => setChartType('bar')}
-          className={`px-3 py-1 rounded text-xs ${chartType === 'bar' ? 'bg-trace text-white' : 'bg-surface-hover text-text-muted'}`}
+          className={`px-3 py-1 rounded text-xs ${chartType === 'bar' ? 'bg-hover text-white' : 'bg-surface text-text-muted'}`}
         >
           Bar
         </button>
         <button
           onClick={() => setChartType('pie')}
-          className={`px-3 py-1 rounded text-xs ${chartType === 'pie' ? 'bg-trace text-white' : 'bg-surface-hover text-text-muted'}`}
+          className={`px-3 py-1 rounded text-xs ${chartType === 'pie' ? 'bg-hover text-white' : 'bg-surface text-text-muted'}`}
         >
           Pie
         </button>
@@ -251,7 +258,7 @@ function AnalyticsSection() {
           {selectedNotes.map((note) => (
             <div key={note.id} className="border-t border-border-subtle pt-2 first:border-0 first:pt-0">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: note.color }} />
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: TYPE_COLORS[note.type] || note.color }} />
                 <p className="text-sm font-medium text-text-primary">{note.title}</p>
               </div>
               {note.description && (
@@ -279,7 +286,7 @@ function AnalyticsSection() {
           const days = getDaysRemaining(goal.target_date)
           return (
             <p key={goal.id} className="text-xs text-text-muted">
-              <span className="text-text-primary">{goal.title}</span> —{' '}
+              <span className="text-trace">{goal.title}</span> —{' '}
               {days >= 0 ? `${days} days remaining` : 'Overdue'}
             </p>
           )

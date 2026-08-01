@@ -7,6 +7,7 @@ interface Reminder {
   event_date: string
   event_time: string | null
   type: string
+  description: string | null
 }
 
 function getLocalDateString(date: Date) {
@@ -20,6 +21,7 @@ function Notifications() {
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [dismissed, setDismissed] = useState<string[]>([])
   const [notifiedIds, setNotifiedIds] = useState<string[]>([])
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -40,7 +42,7 @@ function Notifications() {
 
     const { data, error } = await supabase
       .from('calendar_events')
-      .select('id, title, event_date, event_time, type')
+      .select('id, title, event_date, event_time, type, description')
       .in('event_date', [todayStr, tomorrowStr])
       .eq('status', 'ongoing')
 
@@ -81,6 +83,10 @@ function Notifications() {
     setDismissed([...dismissed, id])
   }
 
+  const toggleExpand = (id: string) => {
+    setExpandedId((prev) => (prev === id ? null : id))
+  }
+
   const visibleReminders = reminders.filter((r) => !dismissed.includes(r.id))
 
   return (
@@ -93,30 +99,62 @@ function Notifications() {
         <p className="text-xs text-text-muted px-4">Nothing due soon</p>
       ) : (
         <div className="flex flex-col gap-2 px-2">
-          {visibleReminders.map((reminder) => (
-            <div
-              key={reminder.id}
-              className="bg-surface-hover border border-border-subtle rounded-lg px-3 py-2"
-            >
-              <div className="flex justify-between items-start gap-2">
-                <div className="min-w-0">
-                  <p className="text-xs font-medium text-text-primary truncate">
-                    [{reminder.type}] {reminder.title}
-                  </p>
-                  <p className="text-[10px] text-text-muted">
-                    {reminder.event_date}
-                    {reminder.event_time && ` at ${reminder.event_time}`}
-                  </p>
+          {visibleReminders.map((reminder) => {
+            const isExpanded = expandedId === reminder.id
+            return (
+              <div
+                key={reminder.id}
+                onMouseEnter={() => setExpandedId(reminder.id)}
+                onMouseLeave={() => setExpandedId(null)}
+                onClick={() => toggleExpand(reminder.id)}
+                className="border border-border-subtle rounded-lg px-3 py-2 cursor-pointer transition-all duration-300 ease-in-out"
+              >
+                <div className="flex justify-between items-start gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className={`text-xs font-medium text-trace transition-all duration-300 ${
+                        isExpanded ? 'whitespace-normal break-words' : 'truncate'
+                      }`}
+                    >
+                      [{reminder.type}] {reminder.title}
+                    </p>
+
+                    <div
+                      className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                        isExpanded ? 'max-h-40 opacity-100 mt-1' : 'max-h-0 opacity-0'
+                      }`}
+                    >
+                      <p className="text-[10px] text-text-muted">
+                        {reminder.event_date}
+                        {reminder.event_time && ` at ${reminder.event_time}`}
+                      </p>
+                      {reminder.description && (
+                        <p className="text-[10px] text-text-primary mt-1 whitespace-normal break-words">
+                          {reminder.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {!isExpanded && (
+                      <p className="text-[10px] text-text-muted truncate">
+                        {reminder.event_date}
+                        {reminder.event_time && ` at ${reminder.event_time}`}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDismiss(reminder.id)
+                    }}
+                    className="text-text-muted text-xs flex-shrink-0"
+                  >
+                    ✕
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleDismiss(reminder.id)}
-                  className="text-text-muted text-xs flex-shrink-0"
-                >
-                  ✕
-                </button>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

@@ -52,12 +52,12 @@ function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-void px-4">
       <div className="w-full max-w-sm p-8 bg-surface border border-border-subtle rounded-xl">
-        <Link to="/" className="block text-2xl font-semibold mb-6 text-trace-dim">
-          VTryse
+        <Link to="/" className="block text-2xl font-semibold mb-6 text-trace">
+          vtryse
         </Link>
 
-        <h2 className="text-lg font-medium mb-4 text-text-primary">
-          {isSignup ? 'Create your account' : 'Welcome back'}
+        <h2 className="text-lg font-medium mb-2 text-text-primary">
+          {isSignup ? 'Create your account' : 'Hello again'}
         </h2>
 
         <div className="flex flex-col gap-3">
@@ -97,7 +97,7 @@ function Login() {
 
         <button
           onClick={isSignup ? handleSignUp : handleLogin}
-          className="w-full mt-4 bg-trace-dim text-white px-4 py-2 rounded-lg hover:bg-trace transition-colors"
+          className="w-full mt-4 bg-hover text-white px-4 py-2 rounded-lg hover:bg-trace-dim transition-colors"
         >
           {isSignup ? 'Sign Up' : 'Log In'}
         </button>
@@ -108,14 +108,14 @@ function Login() {
           {isSignup ? (
             <>
               Already have an account?{' '}
-              <Link to="/login" className="text-trace-dim hover:underline">
+              <Link to="/login" className="text-trace hover:underline">
                 Log in
               </Link>
             </>
           ) : (
             <>
               Don't have an account yet?{' '}
-              <Link to="/signup" className="text-trace-dim hover:underline">
+              <Link to="/signup" className="text-trace hover:underline">
                 Sign up
               </Link>
             </>

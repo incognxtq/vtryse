@@ -190,23 +190,23 @@ function Settings() {
 
   return (
     <div className="p-8 max-w-md">
-      <h1 className="text-2xl font-semibold mb-8 text-text-primary">Settings</h1>
+      <h1 className="text-2xl font-bold mb-8 text-text-primary">Settings</h1>
 
-      <h2 className="text-lg font-semibold mb-3 text-header">Account</h2>
+      <h2 className="text-text-primary text-lg font-semibold mb-3 text-header">Account</h2>
       <div className="flex flex-col gap-3 mb-8">
         <div className="flex items-center gap-4">
           {avatarUrl ? (
             <img
               src={avatarUrl}
               alt="Profile"
-              className="w-16 h-16 rounded-full object-cover border border-border-subtle"
+              className="w-20 h-20 rounded-full object-cover border border-border-subtle"
             />
           ) : (
             <div className="w-16 h-16 rounded-full bg-surface-hover border border-border-subtle flex items-center justify-center text-text-muted text-xs">
               No photo
             </div>
           )}
-          <label className="text-sm text-trace cursor-pointer hover:underline">
+          <label className="text-sm text-text-primary cursor-pointer hover:underline">
             {uploading ? 'Uploading...' : 'Change photo'}
             <input
               type="file"
@@ -234,7 +234,7 @@ function Settings() {
         />
         <button
           onClick={handleSaveAccount}
-          className="bg-green-600 text-white px-4 py-2 rounded self-start text-sm"
+          className="bg-[#3D0B0E] hover:bg-trace-dim text-white px-4 py-2 rounded self-start text-sm"
         >
           Save Changes
         </button>
@@ -242,7 +242,7 @@ function Settings() {
         {successMsg && <p className="text-green-400 text-sm">{successMsg}</p>}
       </div>
 
-      <h2 className="text-lg font-semibold mb-3 text-header">Privacy</h2>
+      <h2 className="text-text-primary text-lg font-semibold mb-3 text-header">Privacy</h2>
       <div className="flex flex-col gap-3 mb-8">
         <input
           type="password"
@@ -260,7 +260,7 @@ function Settings() {
         />
         <button
           onClick={handleChangePassword}
-          className="bg-trace text-white px-4 py-2 rounded self-start text-sm hover:bg-trace-dim transition-colors"
+          className="bg-bg-settings text-white px-4 py-2 rounded self-start text-sm hover:bg-trace-dim transition-colors"
         >
           Update Password
         </button>
@@ -271,35 +271,35 @@ function Settings() {
         )}
       </div>
 
-      <h2 className="text-lg font-semibold mb-3 text-header">Theme</h2>
+      <h2 className="text-text-primary text-lg font-semibold mb-3 text-header">Theme</h2>
       <div className="flex gap-2 mb-8">
         <button
           onClick={() => handleThemeChange('light')}
-          className={`px-4 py-2 rounded text-sm ${theme === 'light' ? 'bg-trace text-white' : 'bg-surface-hover text-text-muted'}`}
+          className={`px-4 py-2 rounded text-sm ${theme === 'light' ? 'bg-bg-settings text-white' : 'bg-surface text-text-muted'}`}
         >
           Light
         </button>
         <button
           onClick={() => handleThemeChange('dark')}
-          className={`px-4 py-2 rounded text-sm ${theme === 'dark' ? 'bg-trace text-white' : 'bg-surface-hover text-text-muted'}`}
+          className={`px-4 py-2 rounded text-sm ${theme === 'dark' ? 'bg-bg-settings text-white' : 'bg-surface text-text-muted'}`}
         >
           Dark
         </button>
         <button
           onClick={() => handleThemeChange('system')}
-          className={`px-4 py-2 rounded text-sm ${theme === 'system' ? 'bg-trace text-white' : 'bg-surface-hover text-text-muted'}`}
+          className={`px-4 py-2 rounded text-sm ${theme === 'system' ? 'bg-bg-settings text-white' : 'bg-surface text-text-muted'}`}
         >
           System
         </button>
       </div>
 
       <div className="mb-8">
-        <h2 className="text-lg font-semibold mb-3 text-header">Sharing</h2>
+        <h2 className="text-text-primary text-lg font-semibold mb-3 text-header">Sharing</h2>
         <div className="flex flex-col gap-3">
           <div>
             <button
               onClick={handleShareWithOthers}
-              className="bg-trace text-white px-4 py-2 rounded text-sm hover:bg-trace-dim transition-colors"
+              className="bg-bg-settings text-white px-4 py-2 rounded text-sm hover:bg-trace-dim transition-colors"
             >
               Share with Others
             </button>
@@ -314,7 +314,7 @@ function Settings() {
           <div>
             <button
               onClick={() => setShowAcceptInput(!showAcceptInput)}
-              className="bg-surface-hover text-text-primary border border-border-subtle px-4 py-2 rounded text-sm hover:bg-border-subtle transition-colors"
+              className="text-text-primary border border-border-subtle px-4 py-2 rounded text-sm hover:bg-trace-dim transition-colors"
             >
               Accept Sharing
             </button>
@@ -330,7 +330,7 @@ function Settings() {
                 />
                 <button
                   onClick={handleAcceptSharing}
-                  className="bg-trace text-white px-4 py-2 rounded text-sm hover:bg-trace-dim transition-colors"
+                  className="bg-surface text-white px-4 py-2 rounded text-sm hover:bg-void transition-colors"
                 >
                   Join
                 </button>
@@ -347,11 +347,16 @@ function Settings() {
       </div>
 
       <div className="pt-6 border-t border-border-subtle">
-        <h2 className="text-lg font-semibold mb-3 text-red-400">Danger Zone</h2>
-        <p>Warning: No restoration once deleted.</p>
+        <h2 className="text-lg font-semibold mb-0 text-[#BA0404]">
+          Danger Zone
+        </h2>
+
+        <p className="mb-4 text-sm text-text-primary">
+          Warning: No restoration once deleted.
+        </p>
         <button
           onClick={handleDeleteAccount}
-          className="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700 transition-colors"
+          className="bg-[#690000] text-white px-4 py-2 rounded text-sm hover:bg-red-700 transition-colors"
         >
           Delete Account
         </button>

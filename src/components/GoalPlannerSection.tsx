@@ -138,7 +138,7 @@ function GoalPlannerSection() {
 
   return (
     <div>
-      <h2 className="text-lg font-semibold mb-3 text-header">Goal Planner</h2>
+      <h2 className="text-trace-dim text-lg font-semibold mb-3 text-header">Goal Planner</h2>
 
       <div className="flex flex-col gap-2 mb-4">
         <input
@@ -156,7 +156,7 @@ function GoalPlannerSection() {
         />
         <button
           onClick={handleAddGoal}
-          className="bg-trace text-white px-4 py-2 rounded-lg hover:bg-trace-dim transition-colors text-sm"
+          className="bg-trace-dim text-white px-4 py-2 rounded-lg hover:bg-hover transition-colors text-sm"
         >
           Add Goal
         </button>
@@ -176,7 +176,7 @@ function GoalPlannerSection() {
                 {isOwner && (
                   <button
                     onClick={() => handleDeleteGoal(goal.id)}
-                    className="text-red-400 text-[10px] flex-shrink-0"
+                    className="text-[#BA0404] text-[10px] flex-shrink-0"
                   >
                     Delete
                   </button>

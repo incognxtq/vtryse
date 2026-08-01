@@ -26,7 +26,7 @@ function Dashboard() {
 
   return (
     <div className="p-8">
-      <h1 className="text-2xl font-semibold mb-8 text-text-primary">
+      <h1 className="text-xl mb-2 text-text-primary">
         {name ? `Welcome back, ${name}!` : 'Dashboard'}
       </h1>
 

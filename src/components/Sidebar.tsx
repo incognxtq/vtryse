@@ -73,9 +73,10 @@ function Sidebar() {
         ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
       >
         <div className="mb-6 px-2 hidden md:block">
-          <h1 className="text-xl font-semibold text-primary tracking-wide">
-            VTryse
+          <h1 className="text-2xl font-bold text-primary tracking-wide text-trace">
+            vtryse
           </h1>
+          <p className="text-xs font-bold text-primary mb-4">Trace Your Progress</p>
         </div>
         <div className="mb-4 md:hidden h-10" />
 
@@ -125,7 +126,7 @@ function Sidebar() {
 
         <button
           onClick={handleLogout}
-          className="text-sm text-left px-4 py-2 rounded-lg text-text-muted hover:bg-surface-hover hover:text-red-400 transition-colors"
+          className="text-sm text-left px-4 py-2 rounded-lg text-text-muted hover:bg-hover transition-colors"
         >
           Log Out
         </button>
