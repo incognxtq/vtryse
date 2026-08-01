@@ -48,6 +48,7 @@ function Settings() {
       (selectedTheme === 'system' &&
         window.matchMedia('(prefers-color-scheme: dark)').matches)
     document.documentElement.classList.toggle('dark', isDark)
+    localStorage.setItem('vtryse-theme', selectedTheme)
   }
 
   const handleThemeChange = async (newTheme: string) => {

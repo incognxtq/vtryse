@@ -10,6 +10,7 @@ export function useTheme() {
           window.matchMedia('(prefers-color-scheme: dark)').matches)
 
       document.documentElement.classList.toggle('dark', isDark)
+      localStorage.setItem('vtryse-theme', theme)
     }
 
     const init = async () => {

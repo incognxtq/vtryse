@@ -28,6 +28,16 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: '#690000',
 }
 
+function JournalTooltip({ active, payload }: any) {
+  if (!active || !payload || !payload.length) return null
+  const point = payload[0].payload
+  return (
+    <div className="bg-surface border border-border-subtle rounded px-2 py-1 text-xs text-text-primary">
+      {point.date} : {point.title}
+    </div>
+  )
+}
+
 function AnalyticsSection() {
   const [events, setEvents] = useState<EventRow[]>([])
   const [goals, setGoals] = useState<Goal[]>([])
@@ -214,15 +224,12 @@ function AnalyticsSection() {
               domain={[0, maxY + 1]}
               hide
             />
-            <Tooltip
-              formatter={(_, __, props) => [props.payload.title, props.payload.date]}
-            />
+            <Tooltip content={<JournalTooltip />} />
             <Scatter
               data={notePoints}
               cursor="pointer"
               onClick={(data: any) => {
-                const sameDay = notesByDate[data.date] || []
-                setSelectedNotes(sameDay)
+                setSelectedNotes([data.raw])
               }}
             >
               {notePoints.map((point, index) => (
