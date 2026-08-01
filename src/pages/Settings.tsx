@@ -348,6 +348,7 @@ function Settings() {
 
       <div className="pt-6 border-t border-border-subtle">
         <h2 className="text-lg font-semibold mb-3 text-red-400">Danger Zone</h2>
+        <p>Warning: No restoration once deleted.</p>
         <button
           onClick={handleDeleteAccount}
           className="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700 transition-colors"
