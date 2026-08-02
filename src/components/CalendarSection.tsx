@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
+import ConfirmDialog from './ConfirmDialog'
 
 interface CalendarEvent {
   id: string
@@ -15,8 +16,8 @@ interface CalendarEvent {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  event: '#8DBD71',
-  task: '#E6D591',
+  event: '#84AB61',
+  task: '#BDA859',
   holiday: '#B0A5A5',
   note: '#E8899A',
 }
@@ -31,6 +32,7 @@ function CalendarSection() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   const [title, setTitle] = useState('')
   const [type, setType] = useState('event')
@@ -132,12 +134,6 @@ function CalendarSection() {
   }
 
   const handleDeleteEvent = async (eventId: string) => {
-    const confirmed = window.confirm(
-      'Are you sure you want to delete this event?\n\nThis action cannot be undone.'
-    )
-
-    if (!confirmed) return
-
     const { error } = await supabase
       .from('calendar_events')
       .delete()
@@ -149,6 +145,7 @@ function CalendarSection() {
       fetchEvents()
       notifyDataChanged()
     }
+    setConfirmDeleteId(null)
   }
 
   const handleSaveEvent = async () => {
@@ -294,7 +291,7 @@ function CalendarSection() {
                     {isOwner && (
                       <div className="flex gap-2 flex-shrink-0">
                         <button onClick={() => startEditing(e)} className="hover:text-text-muted text-[#DBD7D7] text-[12px]">Edit</button>
-                        <button onClick={() => handleDeleteEvent(e.id)} className="hover:text-[#e0262665] text-[#E02626] text-[12px]">Delete</button>
+                        <button onClick={() => setConfirmDeleteId(e.id)} className="hover:text-[#e0262665] text-[#E02626] text-[12px]">Delete</button>
                       </div>
                     )}
                   </div>
@@ -332,7 +329,7 @@ function CalendarSection() {
 
           <button
             onClick={() => setShowForm(!showForm)}
-            className="w-full text-left font-medium text-[12px] text-text-muted hover:text-text-primary flex items-center"
+            className="w-full text-left font-medium text-[12px] text-text-muted hover:text-text-primary flex items-center mb-2"
           >
             {showForm ? '▾ HIDE' : '▸ ADD NEW'}
           </button>
@@ -340,17 +337,18 @@ function CalendarSection() {
           {showForm && (
             <div className="flex flex-col gap-2">
               {editingId && (
-                <p className="p-2 mt-0 text-[13px] text-text-muted">EDITING</p>
+                <p className="p-mb-0 text-[13px] text-text-muted">EDITING</p>
               )}
               <div className="flex gap-1">
                 {TYPE_OPTIONS.map((t) => (
                   <button
                     key={t}
                     onClick={() => setType(t)}
-                    className="flex-1 px-2 py-0 rounded text-[12px] text-text-primary hover:text-void border transition-colors "
+                    className="flex-1 px-2 py-0.5 rounded font-semibold text-[12px]"
                     style={{
                       backgroundColor: type === t ? TYPE_COLORS[t] : 'transparent',
                       borderColor: TYPE_COLORS[t],
+                      color: type === t ? '#000000' : TYPE_COLORS[t],
                     }}
                   >
                     {t}
@@ -358,12 +356,16 @@ function CalendarSection() {
                 ))}
               </div>
               <input
-                type="text"
-                placeholder="Title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="bg-surface border font-semibold border-border-subtle p-2 rounded text-trace text-[14px]"
-              />
+              type="text"
+              placeholder="Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="bg-surface border-2 font-semibold p-2 rounded text-[14px] transition-colors"
+              style={{
+                borderColor: TYPE_COLORS[type],
+                color: TYPE_COLORS[type],
+              }}
+            />
 
               <input
                 type="time"
@@ -432,8 +434,6 @@ function CalendarSection() {
                 )}
               </div>
 
-              {/* ===== REPEAT OPTIONS END ===== */}
-
               <textarea
                 placeholder="Description"
                 value={description}
@@ -457,8 +457,16 @@ function CalendarSection() {
           )}
         </div>
       )}
-    </div>
-  )
-}
+
+      <ConfirmDialog
+            open={confirmDeleteId !== null}
+            title="Delete this event?"
+            message="This action cannot be undone."
+            onConfirm={() => confirmDeleteId && handleDeleteEvent(confirmDeleteId)}
+            onCancel={() => setConfirmDeleteId(null)}
+          />
+        </div>
+      )
+    }
 
 export default CalendarSection

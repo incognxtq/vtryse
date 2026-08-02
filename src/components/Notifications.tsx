@@ -12,9 +12,9 @@ interface Reminder {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  event: '#8DBD71',
-  task: '#E6D591',
-  holiday: '#4D4B45',
+  event: '#84AB61',
+  task: '#BDA859',
+  holiday: '#B0A5A5',
   note: '#E8899A',
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
+import ConfirmDialog from './ConfirmDialog'
 
 interface Goal {
   id: string
@@ -32,6 +33,7 @@ function GoalPlannerSection() {
   const [targetDate, setTargetDate] = useState('')
   const [noteInputs, setNoteInputs] = useState<{ [goalId: string]: string }>({})
   const [errorMsg, setErrorMsg] = useState('')
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   const notifyDataChanged = () => {
     window.dispatchEvent(new Event('calendar-data-changed'))
@@ -109,23 +111,14 @@ function GoalPlannerSection() {
   }
 
   const handleDeleteGoal = async (goalId: string) => {
-    const confirmed = window.confirm(
-      'Are you sure you want to delete this goal?\n\nThis action cannot be undone.'
-    )
-
-    if (!confirmed) return
-
-    const { error } = await supabase
-      .from('goals')
-      .delete()
-      .eq('id', goalId)
-
+    const { error } = await supabase.from('goals').delete().eq('id', goalId)
     if (error) {
       setErrorMsg(error.message)
     } else {
       fetchGoals()
       notifyDataChanged()
     }
+    setConfirmDeleteId(null)
   }
 
   const handleAddUpdate = async (goalId: string) => {
@@ -170,7 +163,7 @@ function GoalPlannerSection() {
         >
           Add Goal
         </button>
-        {errorMsg && <p className="text-red-400 text-sm">{errorMsg}</p>}
+        {errorMsg && <p className="text-[#E02626] text-sm">{errorMsg}</p>}
       </div>
 
       <ul className="space-y-3">
@@ -185,7 +178,7 @@ function GoalPlannerSection() {
                 <p className="font-medium text-trace">{goal.title}</p>
                 {isOwner && (
                   <button
-                    onClick={() => handleDeleteGoal(goal.id)}
+                    onClick={() => setConfirmDeleteId(goal.id)}
                     className="hover:text-[#e0262665] text-[#E02626] text-[10px] flex-shrink-0"
                   >
                     Delete
@@ -229,6 +222,13 @@ function GoalPlannerSection() {
           )
         })}
       </ul>
+    <ConfirmDialog
+        open={confirmDeleteId !== null}
+        title="Delete this goal?"
+        message="This will also remove all its progress notes. This action cannot be undone."
+        onConfirm={() => confirmDeleteId && handleDeleteGoal(confirmDeleteId)}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </div>
   )
 }
