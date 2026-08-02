@@ -109,7 +109,17 @@ function GoalPlannerSection() {
   }
 
   const handleDeleteGoal = async (goalId: string) => {
-    const { error } = await supabase.from('goals').delete().eq('id', goalId)
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this goal?\n\nThis action cannot be undone.'
+    )
+
+    if (!confirmed) return
+
+    const { error } = await supabase
+      .from('goals')
+      .delete()
+      .eq('id', goalId)
+
     if (error) {
       setErrorMsg(error.message)
     } else {
@@ -138,7 +148,7 @@ function GoalPlannerSection() {
 
   return (
     <div>
-      <h2 className="text-trace-dim text-lg font-semibold mb-3 text-header">Goal Planner</h2>
+      <h2 className="text-trace-dim text-xl font-semibold mb-3 text-header">Goal Planner</h2>
 
       <div className="flex flex-col gap-2 mb-4">
         <input
@@ -156,7 +166,7 @@ function GoalPlannerSection() {
         />
         <button
           onClick={handleAddGoal}
-          className="bg-trace-dim text-white px-4 py-2 rounded-lg hover:bg-hover transition-colors text-sm"
+          className="bg-hover text-white px-4 py-2 rounded-lg hover:bg-trace-dim transition-colors text-sm"
         >
           Add Goal
         </button>
@@ -170,23 +180,23 @@ function GoalPlannerSection() {
           const isOwner = goal.user_id === currentUserId
 
           return (
-            <li key={goal.id} className="bg-void border border-border-subtle p-3 rounded-lg text-sm">
+            <li key={goal.id} className="bg-void border border-border-subtle p-4 rounded-lg text-lg">
               <div className="flex justify-between items-start gap-2">
-                <p className="font-medium text-text-primary">{goal.title}</p>
+                <p className="font-medium text-trace">{goal.title}</p>
                 {isOwner && (
                   <button
                     onClick={() => handleDeleteGoal(goal.id)}
-                    className="text-[#BA0404] text-[10px] flex-shrink-0"
+                    className="hover:text-[#e0262665] text-[#E02626] text-[10px] flex-shrink-0"
                   >
                     Delete
                   </button>
                 )}
               </div>
-              <p className="text-xs text-text-muted">
+              <p className="text-[13px] text-text-primary">
                 Target: {goal.target_date} —{' '}
                 {daysLeft >= 0 ? `${daysLeft} days left` : 'Overdue'}
               </p>
-              <p className="text-[10px] text-text-muted">
+              <p className="text-[12px] text-text-muted">
                 Added by {profileNames[goal.user_id] || 'Someone'}
               </p>
 
@@ -202,14 +212,14 @@ function GoalPlannerSection() {
                 />
                 <button
                   onClick={() => handleAddUpdate(goal.id)}
-                  className="bg-surface-hover text-text-primary px-3 py-1 rounded text-xs hover:bg-border-subtle transition-colors"
+                  className="bg-surface text-text-primary px-3 py-1 rounded text-xs hover:bg-hover transition-colors"
                 >
                   Log Update
                 </button>
               </div>
 
               {goalUpdates.length > 0 && (
-                <ul className="mt-2 text-xs text-text-muted list-disc list-inside">
+                <ul className="mt-2 text-[14px] text-text-primary list-disc list-inside">
                   {goalUpdates.map((u) => (
                     <li key={u.id}>{u.note}</li>
                   ))}

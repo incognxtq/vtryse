@@ -105,6 +105,7 @@ function Settings() {
 
   const handleSaveAccount = async () => {
     const { data: { user } } = await supabase.auth.getUser()
+    
     if (!user) return
 
     const { error } = await supabase
@@ -188,25 +189,33 @@ function Settings() {
     }
   }
 
+  const sectionLabel = "text-[11px] font-medium text-text-muted uppercase tracking-widest mb-4"
+  const card = "bg-surface border border-border-subtle rounded-xl p-5 mb-4"
+  const inputStyle = "border border-border-subtle bg-void p-2.5 rounded-lg text-text-primary text-sm placeholder:text-text-muted focus:outline-none focus:border-trace transition-colors"
+  const primaryBtn = "bg-hover text-white px-4 py-2 rounded-lg text-sm hover:bg-trace-dim transition-colors"
+  const secondaryBtn = "border border-border-subtle text-text-primary px-4 py-2 rounded-lg text-sm hover:bg-surface-hover transition-colors"
+
   return (
     <div className="p-8 max-w-md">
-      <h1 className="text-2xl font-bold mb-8 text-text-primary">Settings</h1>
+      <h1 className="text-xl font-semibold mb-8 text-text-primary">Settings</h1>
 
-      <h2 className="text-text-primary text-lg font-semibold mb-3 text-header">Account</h2>
-      <div className="flex flex-col gap-3 mb-8">
-        <div className="flex items-center gap-4">
+      {/* Account */}
+      <div className={card}>
+        <p className={sectionLabel}>Account</p>
+
+        <div className="flex items-center gap-4 mb-4">
           {avatarUrl ? (
             <img
               src={avatarUrl}
               alt="Profile"
-              className="w-20 h-20 rounded-full object-cover border border-border-subtle"
+              className="w-16 h-16 rounded-full object-cover border border-border-subtle"
             />
           ) : (
             <div className="w-16 h-16 rounded-full bg-surface-hover border border-border-subtle flex items-center justify-center text-text-muted text-xs">
               No photo
             </div>
           )}
-          <label className="text-sm text-text-primary cursor-pointer hover:underline">
+          <label className="text-sm text-trace cursor-pointer hover:underline">
             {uploading ? 'Uploading...' : 'Change photo'}
             <input
               type="file"
@@ -218,95 +227,96 @@ function Settings() {
           </label>
         </div>
 
-        <input
-          type="text"
-          placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="border border-border-subtle bg-surface p-2 rounded text-text-primary"
-        />
-        <input
-          type="text"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          className="border border-border-subtle bg-surface p-2 rounded text-text-primary"
-        />
-        <button
-          onClick={handleSaveAccount}
-          className="bg-[#3D0B0E] hover:bg-trace-dim text-white px-4 py-2 rounded self-start text-sm"
-        >
+        <div className="flex flex-col gap-2 mb-3">
+          <input
+            type="text"
+            placeholder="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className={inputStyle}
+          />
+          <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className={inputStyle}
+          />
+        </div>
+
+        <button onClick={handleSaveAccount} className={primaryBtn}>
           Save Changes
         </button>
-        {errorMsg && <p className="text-red-400 text-sm">{errorMsg}</p>}
-        {successMsg && <p className="text-green-400 text-sm">{successMsg}</p>}
+
+        {errorMsg && <p className="text-[#E02626] text-xs mt-2">{errorMsg}</p>}
+        {successMsg && <p className="text-[#DBD7D7] text-xs mt-2">{successMsg}</p>}
       </div>
 
-      <h2 className="text-text-primary text-lg font-semibold mb-3 text-header">Privacy</h2>
-      <div className="flex flex-col gap-3 mb-8">
-        <input
-          type="password"
-          placeholder="New password"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          className="border border-border-subtle bg-surface p-2 rounded text-text-primary"
-        />
-        <input
-          type="password"
-          placeholder="Confirm new password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          className="border border-border-subtle bg-surface p-2 rounded text-text-primary"
-        />
-        <button
-          onClick={handleChangePassword}
-          className="bg-bg-settings text-white px-4 py-2 rounded self-start text-sm hover:bg-trace-dim transition-colors"
-        >
+      {/* Privacy */}
+      <div className={card}>
+        <p className={sectionLabel}>Privacy</p>
+
+        <div className="flex flex-col gap-2 mb-3">
+          <input
+            type="password"
+            placeholder="New password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            className={inputStyle}
+          />
+          <input
+            type="password"
+            placeholder="Confirm new password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className={inputStyle}
+          />
+        </div>
+
+        <button onClick={handleChangePassword} className={primaryBtn}>
           Update Password
         </button>
+
         {passwordMsg && (
-          <p className={`text-sm ${passwordMsg.includes('success') ? 'text-green-400' : 'text-red-400'}`}>
+          <p className={`text-xs mt-2 ${passwordMsg.includes('success') ? 'text-green-400' : 'text-red-400'}`}>
             {passwordMsg}
           </p>
         )}
       </div>
 
-      <h2 className="text-text-primary text-lg font-semibold mb-3 text-header">Theme</h2>
-      <div className="flex gap-2 mb-8">
-        <button
-          onClick={() => handleThemeChange('light')}
-          className={`px-4 py-2 rounded text-sm ${theme === 'light' ? 'bg-bg-settings text-white' : 'bg-surface text-text-muted'}`}
-        >
-          Light
-        </button>
-        <button
-          onClick={() => handleThemeChange('dark')}
-          className={`px-4 py-2 rounded text-sm ${theme === 'dark' ? 'bg-bg-settings text-white' : 'bg-surface text-text-muted'}`}
-        >
-          Dark
-        </button>
-        <button
-          onClick={() => handleThemeChange('system')}
-          className={`px-4 py-2 rounded text-sm ${theme === 'system' ? 'bg-bg-settings text-white' : 'bg-surface text-text-muted'}`}
-        >
-          System
-        </button>
+      {/* Theme */}
+      <div className={card}>
+        <p className={sectionLabel}>Theme</p>
+        <div className="flex gap-2">
+          {['light', 'dark', 'system'].map((t) => (
+            <button
+              key={t}
+              onClick={() => handleThemeChange(t)}
+              className={`flex-1 px-3 py-2 rounded-lg text-sm capitalize transition-colors ${
+                theme === t
+                  ? 'bg-hover hover:bg-trace-dim text-white hover:text-text-primary'
+                  : 'border border-border-subtle text-text-muted hover:bg-trace-dim hover:text-text-primary'
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="mb-8">
-        <h2 className="text-text-primary text-lg font-semibold mb-3 text-header">Sharing</h2>
+      {/* Sharing */}
+      <div className={card}>
+        <p className={sectionLabel}>Sharing</p>
+
         <div className="flex flex-col gap-3">
           <div>
-            <button
-              onClick={handleShareWithOthers}
-              className="bg-bg-settings text-white px-4 py-2 rounded text-sm hover:bg-trace-dim transition-colors"
-            >
+            <button onClick={handleShareWithOthers} className={primaryBtn}>
               Share with Others
             </button>
             {shareCode && (
-              <div className="mt-2 bg-void border border-border-subtle rounded p-3">
-                <p className="text-xs text-text-muted mb-1">Share this code:</p>
-                <p className="text-lg font-mono font-bold text-trace tracking-widest">{shareCode}</p>
+              <div className="mt-3 bg-void border border-border-subtle rounded-lg p-3">
+                <p className="text-[11px] text-text-muted mb-1">Share this code</p>
+                <p className="text-lg font-mono font-semibold text-trace tracking-widest">{shareCode}</p>
               </div>
             )}
           </div>
@@ -314,24 +324,21 @@ function Settings() {
           <div>
             <button
               onClick={() => setShowAcceptInput(!showAcceptInput)}
-              className="text-text-primary border border-border-subtle px-4 py-2 rounded text-sm hover:bg-trace-dim transition-colors"
+              className={secondaryBtn}
             >
               Accept Sharing
             </button>
             {showAcceptInput && (
-              <div className="mt-2 flex gap-2">
+              <div className="mt-3 flex gap-2">
                 <input
                   type="text"
                   placeholder="Enter code"
                   value={redeemCode}
                   onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
                   maxLength={6}
-                  className="border border-border-subtle bg-surface p-2 rounded text-text-primary flex-1 font-mono tracking-widest"
+                  className={`${inputStyle} flex-1 font-mono tracking-widest`}
                 />
-                <button
-                  onClick={handleAcceptSharing}
-                  className="bg-surface text-white px-4 py-2 rounded text-sm hover:bg-void transition-colors"
-                >
+                <button onClick={handleAcceptSharing} className={primaryBtn}>
                   Join
                 </button>
               </div>
@@ -339,24 +346,24 @@ function Settings() {
           </div>
 
           {shareMsg && (
-            <p className={`text-sm ${shareMsg.includes('Success') ? 'text-green-400' : 'text-red-400'}`}>
+            <p className={`text-xs ${shareMsg.includes('Success') ? 'text-green-400' : 'text-red-400'}`}>
               {shareMsg}
             </p>
           )}
         </div>
       </div>
 
-      <div className="pt-6 border-t border-border-subtle">
-        <h2 className="text-lg font-semibold mb-0 text-[#BA0404]">
+      {/* Danger Zone */}
+      <div className="border border-red-900/40 rounded-xl p-5">
+        <p className="text-[11px] font-medium text-red-400 uppercase tracking-widest mb-2">
           Danger Zone
-        </h2>
-
-        <p className="mb-4 text-sm text-text-primary">
-          Warning: No restoration once deleted.
+        </p>
+        <p className="text-xs text-text-muted mb-4">
+          This action is permanent and cannot be undone.
         </p>
         <button
           onClick={handleDeleteAccount}
-          className="bg-[#690000] text-white px-4 py-2 rounded text-sm hover:bg-red-700 transition-colors"
+          className="bg-red-900/80 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-800 transition-colors"
         >
           Delete Account
         </button>

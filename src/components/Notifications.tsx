@@ -8,6 +8,14 @@ interface Reminder {
   event_time: string | null
   type: string
   description: string | null
+  attachment_url: string | null
+}
+
+const TYPE_COLORS: Record<string, string> = {
+  event: '#8DBD71',
+  task: '#E6D591',
+  holiday: '#4D4B45',
+  note: '#E8899A',
 }
 
 function getLocalDateString(date: Date) {
@@ -42,7 +50,7 @@ function Notifications() {
 
     const { data, error } = await supabase
       .from('calendar_events')
-      .select('id, title, event_date, event_time, type, description')
+      .select('id, title, event_date, event_time, type, description, attachment_url')
       .in('event_date', [todayStr, tomorrowStr])
       .eq('status', 'ongoing')
 
@@ -101,6 +109,7 @@ function Notifications() {
         <div className="flex flex-col gap-2 px-2">
           {visibleReminders.map((reminder) => {
             const isExpanded = expandedId === reminder.id
+            const titleColor = TYPE_COLORS[reminder.type] || '#8b7cf6'
             return (
               <div
                 key={reminder.id}
@@ -112,16 +121,17 @@ function Notifications() {
                 <div className="flex justify-between items-start gap-2">
                   <div className="min-w-0 flex-1">
                     <p
-                      className={`text-xs font-medium text-trace transition-all duration-300 ${
+                      className={`text-xs font-medium transition-all duration-300 ${
                         isExpanded ? 'whitespace-normal break-words' : 'truncate'
                       }`}
+                      style={{ color: titleColor }}
                     >
                       [{reminder.type}] {reminder.title}
                     </p>
 
                     <div
                       className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                        isExpanded ? 'max-h-40 opacity-100 mt-1' : 'max-h-0 opacity-0'
+                        isExpanded ? 'max-h-64 opacity-100 mt-1' : 'max-h-0 opacity-0'
                       }`}
                     >
                       <p className="text-[10px] text-text-muted">
@@ -132,6 +142,16 @@ function Notifications() {
                         <p className="text-[10px] text-text-primary mt-1 whitespace-normal break-words">
                           {reminder.description}
                         </p>
+                      )}
+                      {reminder.attachment_url && (
+                        <img
+                          src={reminder.attachment_url}
+                          alt="attachment"
+                          className="max-w-full max-h-32 rounded border border-border-subtle object-contain mt-2"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
                       )}
                     </div>
 

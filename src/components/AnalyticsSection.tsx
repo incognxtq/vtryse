@@ -23,15 +23,15 @@ interface Goal {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  ongoing: '#DBD7D7',
-  completed: '#1D5C1D',
+  ongoing: '#ffffff',
+  completed: '#193B20',
   cancelled: '#690000',
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  event: '#800319',
-  task: '#733B45',
-  holiday: '#5C5C5C',
+  event: '#8DBD71',
+  task: '#E6D591',
+  holiday: '#B0A5A5',
   note: '#E8899A',
 }
 
@@ -129,7 +129,7 @@ function AnalyticsSection() {
 
   return (
     <div>
-      <h2 className="text-trace-dim text-lg font-semibold mb-3 text-header">
+      <h2 className="text-trace-dim text-xl font-semibold mb-3 text-header">
         Analytics
       </h2>
 
@@ -194,7 +194,7 @@ function AnalyticsSection() {
             <p className="text-sm font-medium text-text-primary capitalize">
               {selectedStatus} items
             </p>
-            <button onClick={() => setSelectedStatus(null)} className="text-text-muted text-xs">
+            <button onClick={() => setSelectedStatus(null)} className="text-text-muted text-[12px]">
               ✕
             </button>
           </div>
@@ -210,7 +210,7 @@ function AnalyticsSection() {
         </div>
       )}
 
-      <p className="text-sm font-medium text-text-primary mb-2">Journal Activity</p>
+      <p className="text-[17px] font-medium text-text-primary mb-2">Journal Activity</p>
       <div className="h-40 mb-2">
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart>
@@ -279,13 +279,13 @@ function AnalyticsSection() {
         </div>
       )}
 
-      <p className="text-sm font-medium text-text-primary mb-2">Goal Deadlines</p>
+      <p className="text-[17px] font-medium text-text-primary mb-2">Goal Deadlines</p>
       <div className="space-y-1">
         {goals.length === 0 && <p className="text-xs text-text-muted">No goals yet</p>}
         {goals.map((goal) => {
           const days = getDaysRemaining(goal.target_date)
           return (
-            <p key={goal.id} className="text-xs text-text-muted">
+            <p key={goal.id} className="text-[13px] mb-0 text-text-muted">
               <span className="text-trace">{goal.title}</span> —{' '}
               {days >= 0 ? `${days} days remaining` : 'Overdue'}
             </p>

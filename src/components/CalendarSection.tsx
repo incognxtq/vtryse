@@ -15,9 +15,9 @@ interface CalendarEvent {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  event: '#800319',
-  task: '#733B45',
-  holiday: '#5C5C5C',
+  event: '#8DBD71',
+  task: '#E6D591',
+  holiday: '#B0A5A5',
   note: '#E8899A',
 }
 
@@ -45,7 +45,9 @@ function CalendarSection() {
   }
 
   const fetchEvents = async () => {
-    const { data } = await supabase.from('calendar_events').select('*')
+    const { data } = await supabase
+      .from('calendar_events')
+      .select('id, user_id, type, title, description, event_date, event_time, status, attachment_url, color')
     setEvents(data || [])
   }
 
@@ -120,7 +122,17 @@ function CalendarSection() {
   }
 
   const handleDeleteEvent = async (eventId: string) => {
-    const { error } = await supabase.from('calendar_events').delete().eq('id', eventId)
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this event?\n\nThis action cannot be undone.'
+    )
+
+    if (!confirmed) return
+
+    const { error } = await supabase
+      .from('calendar_events')
+      .delete()
+      .eq('id', eventId)
+
     if (error) {
       setErrorMsg(error.message)
     } else {
@@ -204,11 +216,11 @@ function CalendarSection() {
 
   return (
     <div>
-      <h2 className="text-trace-dim text-lg font-semibold mb-3 text-header">Calendar</h2>
+      <h2 className="text-trace-dim text-xl font-semibold mb-3 text-header">Calendar</h2>
 
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-4">
         <button onClick={() => setCurrentMonth(new Date(year, month - 1, 1))} className="text-text-muted text-sm px-2">‹</button>
-        <p className="text-sm font-medium text-text-primary">{monthLabel}</p>
+        <p className="text-l font-medium text-text-primary">{monthLabel}</p>
         <button onClick={() => setCurrentMonth(new Date(year, month + 1, 1))} className="text-text-muted text-sm px-2">›</button>
       </div>
 
@@ -216,7 +228,7 @@ function CalendarSection() {
         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <div key={i}>{d}</div>)}
       </div>
 
-      <div className="grid grid-cols-7 gap-1 mb-3">
+      <div className="grid grid-cols-7 gap-1.5 mb-7">
         {cells.map((date, i) => {
           const dayEvents = date ? eventsForDate(date) : []
           return (
@@ -229,14 +241,14 @@ function CalendarSection() {
                   setShowForm(false)
                 }
               }}
-              className={`h-14 rounded border text-[10px] p-1 cursor-pointer overflow-hidden
-                ${date ? 'border-border-subtle bg-void hover:bg-surface-hover' : 'border-transparent'}
-                ${selectedDate === date ? 'ring-1 ring-trace' : ''}`}
+              className={`h-15 rounded border text-[10px] p-1 cursor-pointer overflow-hidden
+                ${date ? 'border-border-subtle bg-void hover:bg-surface' : 'border-transparent'}
+                ${selectedDate === date ? 'ring-2 ring-trace' : ''}`}
             >
               {date && <span className="text-text-muted">{parseInt(date.split('-')[2])}</span>}
               <div className="flex flex-col gap-0.5 mt-0.5">
                 {dayEvents.slice(0, 2).map((e) => (
-                  <div key={e.id} className="truncate rounded px-1" style={{ backgroundColor: TYPE_COLORS[e.type] || e.color, color: '#fff' }}>
+                  <div key={e.id} className="truncate rounded px-1" style={{ backgroundColor: TYPE_COLORS[e.type] || e.color, color: '#000000' }}>
                     {e.title}
                   </div>
                 ))}
@@ -248,36 +260,36 @@ function CalendarSection() {
       </div>
 
       {selectedDate && (
-        <div className="bg-void border border-border-subtle rounded-lg p-3">
-          <div className="flex justify-between items-center mb-2">
-            <p className="text-sm font-medium text-text-primary">{selectedDate}</p>
-            <button onClick={() => { setSelectedDate(null); resetForm(); setShowForm(false) }} className="text-text-muted text-xs">✕</button>
+        <div className="bg-surface border border-border-subtle rounded-lg p-3">
+          <div className="flex justify-between items-center mb-1">
+            <p className="text-[15px] font-medium text-text-primary">{selectedDate}</p>
+            <button onClick={() => { setSelectedDate(null); resetForm(); setShowForm(false) }} className="text-text-muted hover:text-[#E02626] text-xs">✕</button>
           </div>
 
-          <ul className="space-y-2 mb-3">
+          <ul className="space-y-2 mb-4">
             {eventsForDate(selectedDate).map((e) => {
               const isOwner = e.user_id === currentUserId
               return (
-                <li key={e.id} className="text-xs flex flex-col gap-1 border-b border-border-subtle pb-2 last:border-0">
+                <li key={e.id} className="text-[13px] flex flex-col gap-1 border-b border-border-subtle pb-2 last:border-0">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: TYPE_COLORS[e.type] || e.color }} />
-                      <span className="text-text-primary truncate">[{e.type}] {e.title}</span>
+                      <span className="w- h-2 rounded-full flex-shrink-0" style={{ backgroundColor: TYPE_COLORS[e.type] || e.color }} />
+                      <span className="text-trace truncate">[{e.type}] {e.title}</span>
                       {e.attachment_url && (
-                        <a href={e.attachment_url} target="_blank" rel="noopener noreferrer" className="text-trace underline flex-shrink-0">
+                        <a href={e.attachment_url} target="_blank" rel="noopener noreferrer" className="text-text-primary flex-shrink-0">
                           file
                         </a>
                       )}
                     </div>
                     {isOwner && (
                       <div className="flex gap-2 flex-shrink-0">
-                        <button onClick={() => startEditing(e)} className="text-[#DBD7D7] text-[10px]">Edit</button>
-                        <button onClick={() => handleDeleteEvent(e.id)} className="text-[#BA0404] text-[10px]">Delete</button>
+                        <button onClick={() => startEditing(e)} className="hover:text-text-muted text-[#DBD7D7] text-[12px]">Edit</button>
+                        <button onClick={() => handleDeleteEvent(e.id)} className="hover:text-[#e0262665] text-[#E02626] text-[12px]">Delete</button>
                       </div>
                     )}
                   </div>
 
-                  <p className="text-[10px] text-text-muted ml-4">
+                  <p className="text-[13px] text-text-muted mb-1 ml-4">
                     Added by {profileNames[e.user_id] || 'Someone'}
                   </p>
 
@@ -288,14 +300,14 @@ function CalendarSection() {
                           key={s}
                           onClick={() => isOwner && handleStatusChange(e.id, s)}
                           disabled={!isOwner}
-                          className={`px-2 py-0.5 rounded text-[10px] capitalize transition-colors ${
+                          className={`px-4 py-1.5 rounded text-[10px] capitalize transition-colors ${
                             e.status === s
                               ? s === 'ongoing'
                                 ? 'bg-[#DBD7D7] text-void'
                                 : s === 'completed'
-                                ? 'bg-[#1D5C1D] text-white'
+                                ? 'bg-[#193B20] text-white'
                                 : 'bg-[#690000] text-white'
-                              : 'bg-surface-hover text-text-muted hover:bg-border-subtle'
+                              : 'text-text-muted hover:bg-border-subtle'
                           } ${!isOwner ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           {s}
@@ -310,38 +322,43 @@ function CalendarSection() {
 
           <button
             onClick={() => setShowForm(!showForm)}
-            className="w-full text-left text-xs text-trace hover:underline mb-2 flex items-center gap-1"
+            className="w-full text-left font-medium text-[12px] text-text-muted hover:text-text-primary flex items-center"
           >
-            {showForm ? '▾ Hide form' : '▸ Add new'}
+            {showForm ? '▾ HIDE' : '▸ ADD NEW'}
           </button>
 
           {showForm && (
             <div className="flex flex-col gap-2">
               {editingId && (
-                <p className="text-[10px] text-text-primary">EDITING</p>
+                <p className="p-2 mt-0 text-[13px] text-text-muted">EDITING</p>
               )}
               <div className="flex gap-1">
                 {TYPE_OPTIONS.map((t) => (
                   <button
                     key={t}
                     onClick={() => setType(t)}
-                    className="flex-1 px-2 py-1 rounded text-[10px] capitalize border transition-colors"
+                    className="flex-1 px-2 py-0 rounded text-[12px] text-text-primary hover:text-void border transition-colors "
                     style={{
                       backgroundColor: type === t ? TYPE_COLORS[t] : 'transparent',
                       borderColor: TYPE_COLORS[t],
-                      color: type === t ? '#fff' : TYPE_COLORS[t],
                     }}
                   >
                     {t}
                   </button>
                 ))}
               </div>
-              <input type="text" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} className="bg-surface border border-border-subtle p-1 rounded text-text-primary text-xs" />
-              <input type="time" value={eventTime} onChange={(e) => setEventTime(e.target.value)} className="bg-surface border border-border-subtle p-1 rounded text-text-primary text-xs" />
-              <textarea placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} className="bg-surface border border-border-subtle p-1 rounded text-text-primary text-xs" />
-              <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="text-text-muted text-xs" />
+              <input type="text" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} className="bg-surface border font-semibold border-border-subtle p-2 rounded text-trace text-[14px]" />
+              <input type="time" value={eventTime} onChange={(e) => setEventTime(e.target.value)} className="bg-surface border border-border-subtle p-1 rounded text-text-primary text-[12px] p-1" />
+              <textarea
+                placeholder="Description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={4}
+                className="bg-surface border border-border-subtle p-2 rounded text-text-primary text-[13px] w-full resize-y min-h-[110px]"
+              />
+              <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="text-text-muted hover:text-text-primary text-xs" />
               <div className="flex gap-2">
-                <button onClick={handleSaveEvent} disabled={uploading} className="bg-hover text-white px-3 py-1 rounded text-xs hover:bg-trace-dim flex-1">
+                <button onClick={handleSaveEvent} disabled={uploading} className="bg-hover text-white px-3 py-1 rounded text-xs hover:bg-trace-dim">
                   {uploading ? 'Uploading...' : editingId ? 'Save Changes' : 'Add'}
                 </button>
                 {editingId && (
