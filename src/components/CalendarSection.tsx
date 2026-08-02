@@ -40,6 +40,11 @@ function CalendarSection() {
   const [errorMsg, setErrorMsg] = useState('')
   const [uploading, setUploading] = useState(false)
 
+  const [repeat, setRepeat] = useState('none')
+  const [customInterval, setCustomInterval] = useState(1)
+  const [customUnit, setCustomUnit] = useState('week')
+  const [repeatCount, setRepeatCount] = useState(1)
+
   const notifyDataChanged = () => {
     window.dispatchEvent(new Event('calendar-data-changed'))
   }
@@ -109,6 +114,11 @@ function CalendarSection() {
     setFile(null)
     setEditingId(null)
     setErrorMsg('')
+
+    setRepeat('none')
+    setCustomInterval(1)
+    setCustomUnit('week')
+    setRepeatCount(1)
   }
 
   const startEditing = (e: CalendarEvent) => {
@@ -347,15 +357,90 @@ function CalendarSection() {
                   </button>
                 ))}
               </div>
-              <input type="text" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} className="bg-surface border font-semibold border-border-subtle p-2 rounded text-trace text-[14px]" />
-              <input type="time" value={eventTime} onChange={(e) => setEventTime(e.target.value)} className="bg-surface border border-border-subtle p-1 rounded text-text-primary text-[12px] p-1" />
+              <input
+                type="text"
+                placeholder="Title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="bg-surface border font-semibold border-border-subtle p-2 rounded text-trace text-[14px]"
+              />
+
+              <input
+                type="time"
+                value={eventTime}
+                onChange={(e) => setEventTime(e.target.value)}
+                className="bg-surface border border-border-subtle p-1 rounded text-text-primary text-[12px]"
+              />
+
+              <div className="flex flex-col gap-2">
+                <label className="text-[12px] text-text-muted">
+                  Repeat
+                </label>
+
+                <select
+                  value={repeat}
+                  onChange={(e) => setRepeat(e.target.value)}
+                  className="bg-surface border border-border-subtle p-2 rounded text-[12px]"
+                >
+                  <option value="none">Does not repeat</option>
+                  <option value="daily">Every day</option>
+                  <option value="weekly">Every week</option>
+                  <option value="monthly">Every month</option>
+                  <option value="yearly">Every year</option>
+                  <option value="custom">Custom...</option>
+                </select>
+
+                {repeat === 'custom' && (
+                  <div className="flex gap-2">
+                    <span className="text-[12px] mt-2">Every</span>
+
+                    <input
+                      type="number"
+                      min={1}
+                      value={customInterval}
+                      onChange={(e) => setCustomInterval(Number(e.target.value))}
+                      className="w-20 bg-surface border border-border-subtle rounded p-2 text-[12px]"
+                    />
+
+                    <select
+                      value={customUnit}
+                      onChange={(e) => setCustomUnit(e.target.value)}
+                      className="bg-surface border border-border-subtle rounded p-2 text-[12px]"
+                    >
+                      <option value="day">Day(s)</option>
+                      <option value="week">Week(s)</option>
+                      <option value="month">Month(s)</option>
+                      <option value="year">Year(s)</option>
+                    </select>
+                  </div>
+                )}
+
+                {repeat !== 'none' && (
+                  <div className="flex gap-2 items-center">
+                    <label className="text-[12px]">
+                      Occurrences
+                    </label>
+
+                    <input
+                      type="number"
+                      min={1}
+                      value={repeatCount}
+                      onChange={(e) => setRepeatCount(Number(e.target.value))}
+                      className="w-24 bg-surface border border-border-subtle rounded p-2 text-[12px]"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* ===== REPEAT OPTIONS END ===== */}
+
               <textarea
                 placeholder="Description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
                 className="bg-surface border border-border-subtle p-2 rounded text-text-primary text-[13px] w-full resize-y min-h-[110px]"
-              />
+/>
               <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="text-text-muted hover:text-text-primary text-xs" />
               <div className="flex gap-2">
                 <button onClick={handleSaveEvent} disabled={uploading} className="bg-hover text-white px-3 py-1 rounded text-xs hover:bg-trace-dim">
