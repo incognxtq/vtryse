@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
+import SearchableSelect from '../components/SearchableSelect'
+import { COUNTRIES } from '../utils/countries'
+import { ALL_TIMEZONES } from '../utils/timezone'
 
 function Settings() {
   const [name, setName] = useState('')
@@ -18,6 +21,11 @@ function Settings() {
   const [redeemCode, setRedeemCode] = useState('')
   const [shareMsg, setShareMsg] = useState('')
 
+  const [shareLocation, setShareLocation] = useState(true)
+  const [country, setCountry] = useState('')
+  const [timezone, setTimezone] = useState('UTC')
+  const [locationMsg, setLocationMsg] = useState('')
+
   const fetchProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
@@ -35,6 +43,9 @@ function Settings() {
       setUsername(data.username || '')
       setAvatarUrl(data.avatar_url || '')
       setThemeState(data.theme || 'dark')
+      setShareLocation(data.share_location !== false)
+      setCountry(data.country || '')
+      setTimezone(data.timezone || 'UTC')
     }
   }
 
@@ -105,7 +116,7 @@ function Settings() {
 
   const handleSaveAccount = async () => {
     const { data: { user } } = await supabase.auth.getUser()
-    
+
     if (!user) return
 
     const { error } = await supabase
@@ -164,6 +175,38 @@ function Settings() {
       setShareMsg('Successfully joined the shared dashboard! Refreshing...')
       setTimeout(() => window.location.reload(), 1500)
     }
+  }
+
+  const handleToggleShareLocation = async () => {
+    const newValue = !shareLocation
+    setShareLocation(newValue)
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ share_location: newValue })
+      .eq('id', user.id)
+
+    if (error) setErrorMsg(error.message)
+  }
+
+  const handleSaveLocation = async () => {
+    const { data: sessionData } = await supabase.auth.getSession()
+    console.log('ACCESS TOKEN:', sessionData.session?.access_token)
+    console.log('SESSION USER ID:', sessionData.session?.user?.id)
+
+    setLocationMsg('')
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { error } = await supabase
+      .from('profiles')
+      .upsert({ id: user.id, name, username, avatar_url: avatarUrl, theme, country, timezone })
+
+    if (error) setLocationMsg(error.message)
+    else setLocationMsg('Location saved!')
   }
 
   const handleDeleteAccount = async () => {
@@ -302,6 +345,58 @@ function Settings() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Country & Timezone */}
+      <div className={card}>
+        <p className={sectionLabel}>Country & Timezone</p>
+
+        <div className="flex flex-col gap-2 mb-3">
+          <SearchableSelect
+            options={COUNTRIES.map((c) => ({ value: c.name, label: c.name }))}
+            value={country}
+            onChange={(val) => {
+              setCountry(val)
+              const match = COUNTRIES.find((c) => c.name === val)
+              if (match) setTimezone(match.timezone)
+            }}
+            placeholder="Search country..."
+          />
+          <SearchableSelect
+            options={ALL_TIMEZONES.map((tz) => ({ value: tz, label: tz }))}
+            value={timezone}
+            onChange={setTimezone}
+            placeholder="Search timezone..."
+          />
+        </div>
+
+        <button onClick={handleSaveLocation} className={primaryBtn}>
+          Save
+        </button>
+
+        {locationMsg && (
+          <p className={`text-xs mt-2 ${locationMsg.includes('saved') ? 'text-green-400' : 'text-red-400'}`}>
+            {locationMsg}
+          </p>
+        )}
+      </div>
+
+      {/* Location Sharing */}
+      <div className={card}>
+        <p className={sectionLabel}>Location Sharing</p>
+        <p className="text-xs text-text-muted mb-3">
+          Show your location, time, and weather to people sharing your dashboard.
+        </p>
+        <button
+          onClick={handleToggleShareLocation}
+          className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+            shareLocation
+              ? 'bg-hover text-white hover:bg-trace-dim'
+              : 'border border-border-subtle text-text-muted hover:bg-surface-hover'
+          }`}
+        >
+          {shareLocation ? 'Sharing Enabled' : 'Sharing Disabled'}
+        </button>
       </div>
 
       {/* Sharing */}

@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import ConfirmDialog from './ConfirmDialog'
+import { type RepeatConfig, summarizeRepeat, generateOccurrenceDates } from './RepeatPopover'
+import RepeatModal from './RepeatModal'
+import { ALL_TIMEZONES, getBrowserTimezone, convertEventTimeForViewer } from '../utils/timezone'
 
 interface CalendarEvent {
   id: string
@@ -13,6 +16,8 @@ interface CalendarEvent {
   status: string
   attachment_url: string | null
   color: string
+  location: string | null
+  timezone: string | null
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -24,10 +29,21 @@ const TYPE_COLORS: Record<string, string> = {
 
 const TYPE_OPTIONS = ['event', 'task', 'holiday', 'note']
 
+const DEFAULT_REPEAT: RepeatConfig = {
+  type: 'none',
+  interval: 1,
+  unit: 'week',
+  days: [],
+  ends: 'never',
+  endDate: '',
+  occurrences: 5,
+}
+
 function CalendarSection() {
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [profileNames, setProfileNames] = useState<Record<string, string>>({})
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [viewerTimezone, setViewerTimezone] = useState(getBrowserTimezone())
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -38,14 +54,14 @@ function CalendarSection() {
   const [type, setType] = useState('event')
   const [eventTime, setEventTime] = useState('')
   const [description, setDescription] = useState('')
+  const [location, setLocation] = useState('')
+  const [eventTimezone, setEventTimezone] = useState(getBrowserTimezone())
   const [file, setFile] = useState<File | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
   const [uploading, setUploading] = useState(false)
 
-  const [repeat, setRepeat] = useState('none')
-  const [customInterval, setCustomInterval] = useState(1)
-  const [customUnit, setCustomUnit] = useState('week')
-  const [repeatCount, setRepeatCount] = useState(1)
+  const [repeatOpen, setRepeatOpen] = useState(false)
+  const [repeatConfig, setRepeatConfig] = useState<RepeatConfig>(DEFAULT_REPEAT)
 
   const notifyDataChanged = () => {
     window.dispatchEvent(new Event('calendar-data-changed'))
@@ -54,7 +70,7 @@ function CalendarSection() {
   const fetchEvents = async () => {
     const { data } = await supabase
       .from('calendar_events')
-      .select('id, user_id, type, title, description, event_date, event_time, status, attachment_url, color')
+      .select('id, user_id, type, title, description, event_date, event_time, status, attachment_url, color, location, timezone')
     setEvents(data || [])
   }
 
@@ -69,12 +85,20 @@ function CalendarSection() {
     }
   }
 
+  const fetchViewerTimezone = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data } = await supabase.from('profiles').select('timezone').eq('id', user.id).maybeSingle()
+    if (data?.timezone) setViewerTimezone(data.timezone)
+  }
+
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       setCurrentUserId(user?.id || null)
       fetchEvents()
       fetchProfileNames()
+      fetchViewerTimezone()
     }
     init()
   }, [])
@@ -113,14 +137,12 @@ function CalendarSection() {
     setDescription('')
     setEventTime('')
     setType('event')
+    setLocation('')
+    setEventTimezone(getBrowserTimezone())
     setFile(null)
     setEditingId(null)
     setErrorMsg('')
-
-    setRepeat('none')
-    setCustomInterval(1)
-    setCustomUnit('week')
-    setRepeatCount(1)
+    setRepeatConfig(DEFAULT_REPEAT)
   }
 
   const startEditing = (e: CalendarEvent) => {
@@ -129,6 +151,8 @@ function CalendarSection() {
     setType(e.type)
     setEventTime(e.event_time || '')
     setDescription(e.description || '')
+    setLocation(e.location || '')
+    setEventTimezone(e.timezone || getBrowserTimezone())
     setFile(null)
     setShowForm(true)
   }
@@ -181,6 +205,8 @@ function CalendarSection() {
         description,
         event_time: eventTime || null,
         color,
+        location: location || null,
+        timezone: eventTimezone,
       }
       if (attachmentUrl) updatePayload.attachment_url = attachmentUrl
 
@@ -197,17 +223,25 @@ function CalendarSection() {
         notifyDataChanged()
       }
     } else {
-      const { error } = await supabase.from('calendar_events').insert({
+      const dates = generateOccurrenceDates(selectedDate, repeatConfig)
+      const repeatGroupId = dates.length > 1 ? crypto.randomUUID() : null
+
+      const rows = dates.map((d) => ({
         user_id: user.id,
         type,
         title,
         description,
-        event_date: selectedDate,
+        event_date: d,
         event_time: eventTime || null,
         status: 'ongoing',
         attachment_url: attachmentUrl,
         color,
-      })
+        location: location || null,
+        timezone: eventTimezone,
+        repeat_group_id: repeatGroupId,
+      }))
+
+      const { error } = await supabase.from('calendar_events').insert(rows)
 
       if (error) {
         setErrorMsg(error.message)
@@ -276,8 +310,14 @@ function CalendarSection() {
           <ul className="space-y-2 mb-4">
             {eventsForDate(selectedDate).map((e) => {
               const isOwner = e.user_id === currentUserId
+              const converted = convertEventTimeForViewer(
+                e.event_date,
+                e.event_time,
+                e.timezone || 'UTC',
+                viewerTimezone
+              )
               return (
-                <li key={e.id} className="text-[13px] flex flex-col gap-1 border-b border-border-subtle pb-2 last:border-0">
+                <li key={e.id} className="text-[13px] flex flex-col gap-1 border-b border-border-subtle pb-1 last:border-0">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="w- h-2 rounded-full flex-shrink-0" style={{ backgroundColor: TYPE_COLORS[e.type] || e.color }} />
@@ -295,6 +335,15 @@ function CalendarSection() {
                       </div>
                     )}
                   </div>
+
+                  {converted && (
+                    <p className="text-[11px] text-text-muted ml-4">
+                      {converted.time} ({viewerTimezone})
+                    </p>
+                  )}
+                  {e.location && (
+                    <p className="text-[11px] text-text-muted ml-4">📍 {e.location}</p>
+                  )}
 
                   <p className="text-[13px] text-text-muted mb-1 ml-4">
                     Added by {profileNames[e.user_id] || 'Someone'}
@@ -355,17 +404,15 @@ function CalendarSection() {
                   </button>
                 ))}
               </div>
+
               <input
-              type="text"
-              placeholder="Title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="bg-surface border-2 font-semibold p-2 rounded text-[14px] transition-colors"
-              style={{
-                borderColor: TYPE_COLORS[type],
-                color: TYPE_COLORS[type],
-              }}
-            />
+                type="text"
+                placeholder="Title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="bg-surface border-1 font-medium p-2 rounded text-[13px] transition-colors"
+                style={{ borderColor: TYPE_COLORS[type], color: TYPE_COLORS[type] }}
+              />
 
               <input
                 type="time"
@@ -374,65 +421,31 @@ function CalendarSection() {
                 className="bg-surface border border-border-subtle p-1 rounded text-text-primary text-[12px]"
               />
 
-              <div className="flex flex-col gap-2">
-                <label className="text-[12px] text-text-muted">
-                  Repeat
-                </label>
+              <select
+                value={eventTimezone}
+                onChange={(e) => setEventTimezone(e.target.value)}
+                className="bg-surface border border-border-subtle p-2 rounded text-text-primary text-[12px]"
+              >
+                {ALL_TIMEZONES.map((tz) => (
+                  <option key={tz} value={tz}>{tz}</option>
+                ))}
+              </select>
 
-                <select
-                  value={repeat}
-                  onChange={(e) => setRepeat(e.target.value)}
-                  className="bg-surface border border-border-subtle p-2 rounded text-[12px]"
-                >
-                  <option value="none">Does not repeat</option>
-                  <option value="daily">Every day</option>
-                  <option value="weekly">Every week</option>
-                  <option value="monthly">Every month</option>
-                  <option value="yearly">Every year</option>
-                  <option value="custom">Custom...</option>
-                </select>
+              <input
+                type="text"
+                placeholder="Location (optional)"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                className="bg-surface border border-border-subtle p-2 rounded text-text-primary text-[12px]"
+              />
 
-                {repeat === 'custom' && (
-                  <div className="flex gap-2">
-                    <span className="text-[12px] mt-2">Every</span>
-
-                    <input
-                      type="number"
-                      min={1}
-                      value={customInterval}
-                      onChange={(e) => setCustomInterval(Number(e.target.value))}
-                      className="w-20 bg-surface border border-border-subtle rounded p-2 text-[12px]"
-                    />
-
-                    <select
-                      value={customUnit}
-                      onChange={(e) => setCustomUnit(e.target.value)}
-                      className="bg-surface border border-border-subtle rounded p-2 text-[12px]"
-                    >
-                      <option value="day">Day(s)</option>
-                      <option value="week">Week(s)</option>
-                      <option value="month">Month(s)</option>
-                      <option value="year">Year(s)</option>
-                    </select>
-                  </div>
-                )}
-
-                {repeat !== 'none' && (
-                  <div className="flex gap-2 items-center">
-                    <label className="text-[12px]">
-                      Occurrences
-                    </label>
-
-                    <input
-                      type="number"
-                      min={1}
-                      value={repeatCount}
-                      onChange={(e) => setRepeatCount(Number(e.target.value))}
-                      className="w-24 bg-surface border border-border-subtle rounded p-2 text-[12px]"
-                    />
-                  </div>
-                )}
-              </div>
+              <button
+                type="button"
+                onClick={() => setRepeatOpen(true)}
+                className="w-full text-left bg-surface border border-border-subtle p-2 rounded text-text-primary text-[12px] hover:bg-surface-hover transition-colors"
+              >
+                🔁 {summarizeRepeat(repeatConfig)}
+              </button>
 
               <textarea
                 placeholder="Description"
@@ -440,7 +453,7 @@ function CalendarSection() {
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
                 className="bg-surface border border-border-subtle p-2 rounded text-text-primary text-[13px] w-full resize-y min-h-[110px]"
-/>
+              />
               <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="text-text-muted hover:text-text-primary text-xs" />
               <div className="flex gap-2">
                 <button onClick={handleSaveEvent} disabled={uploading} className="bg-hover text-white px-3 py-1 rounded text-xs hover:bg-trace-dim">
@@ -459,14 +472,21 @@ function CalendarSection() {
       )}
 
       <ConfirmDialog
-            open={confirmDeleteId !== null}
-            title="Delete this event?"
-            message="This action cannot be undone."
-            onConfirm={() => confirmDeleteId && handleDeleteEvent(confirmDeleteId)}
-            onCancel={() => setConfirmDeleteId(null)}
-          />
-        </div>
-      )
-    }
+        open={confirmDeleteId !== null}
+        title="Delete this event?"
+        message="This action cannot be undone."
+        onConfirm={() => confirmDeleteId && handleDeleteEvent(confirmDeleteId)}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
+
+      <RepeatModal
+        open={repeatOpen}
+        config={repeatConfig}
+        onChange={setRepeatConfig}
+        onClose={() => setRepeatOpen(false)}
+      />
+    </div>
+  )
+}
 
 export default CalendarSection
