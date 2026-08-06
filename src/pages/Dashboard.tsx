@@ -3,6 +3,7 @@ import { supabase } from '../supabaseClient'
 import AnalyticsSection from '../components/AnalyticsSection'
 import CalendarSection from '../components/CalendarSection'
 import GoalPlannerSection from '../components/GoalPlannerSection'
+import DashboardHeader from '../components/DashboardHeader'
 
 function Dashboard() {
   const [name, setName] = useState('')
@@ -29,6 +30,8 @@ function Dashboard() {
       <h1 className="text-xl mb-2 text-text-primary">
         {name ? `Welcome back, ${name}!` : 'Dashboard'}
       </h1>
+
+      <DashboardHeader />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-surface border border-border-subtle rounded-xl p-5">

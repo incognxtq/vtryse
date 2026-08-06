@@ -1,4 +1,4 @@
-import type { RepeatConfig, summarizeRepeat } from './RepeatPopover'
+import type { RepeatConfig } from './RepeatPopover'
 
 const WEEKDAYS = [
   { key: 'sun', label: 'S' }, { key: 'mon', label: 'M' }, { key: 'tue', label: 'T' },

@@ -452,7 +452,7 @@ function CalendarSection() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
-                className="bg-surface border border-border-subtle p-2 rounded text-text-primary text-[13px] w-full resize-y min-h-[110px]"
+                className="bg-surface border border-border-subtle p-2 rounded text-text-primary text-[13px] w-full resize-y min-h-[110px] leading-relaxed"
               />
               <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="text-text-muted hover:text-text-primary text-xs" />
               <div className="flex gap-2">

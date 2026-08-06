@@ -21,7 +21,7 @@ function weatherCodeToText(code: number) {
   return 'Clear'
 }
 
-function DashboardHeader({ name }: { name: string }) {
+function DashboardHeader() {
   const [members, setMembers] = useState<MemberInfo[]>([])
   const [now, setNow] = useState(new Date())
 

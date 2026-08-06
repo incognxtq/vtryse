@@ -34,6 +34,7 @@ function GoalPlannerSection() {
   const [noteInputs, setNoteInputs] = useState<{ [goalId: string]: string }>({})
   const [errorMsg, setErrorMsg] = useState('')
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   const notifyDataChanged = () => {
     window.dispatchEvent(new Event('calendar-data-changed'))
@@ -81,6 +82,19 @@ function GoalPlannerSection() {
     init()
   }, [])
 
+  const resetForm = () => {
+    setTitle('')
+    setTargetDate('')
+    setEditingId(null)
+    setErrorMsg('')
+  }
+
+  const startEditing = (goal: Goal) => {
+    setEditingId(goal.id)
+    setTitle(goal.title)
+    setTargetDate(goal.target_date)
+  }
+
   const handleAddGoal = async () => {
     if (!title || !targetDate) {
       setErrorMsg('Title and target date are required')
@@ -93,20 +107,33 @@ function GoalPlannerSection() {
       return
     }
 
-    const { error } = await supabase.from('goals').insert({
-      user_id: user.id,
-      title,
-      target_date: targetDate,
-    })
+    if (editingId) {
+      const { error } = await supabase
+        .from('goals')
+        .update({ title, target_date: targetDate })
+        .eq('id', editingId)
 
-    if (error) {
-      setErrorMsg(error.message)
+      if (error) {
+        setErrorMsg(error.message)
+      } else {
+        resetForm()
+        fetchGoals()
+        notifyDataChanged()
+      }
     } else {
-      setTitle('')
-      setTargetDate('')
-      setErrorMsg('')
-      fetchGoals()
-      notifyDataChanged()
+      const { error } = await supabase.from('goals').insert({
+        user_id: user.id,
+        title,
+        target_date: targetDate,
+      })
+
+      if (error) {
+        setErrorMsg(error.message)
+      } else {
+        resetForm()
+        fetchGoals()
+        notifyDataChanged()
+      }
     }
   }
 
@@ -144,6 +171,9 @@ function GoalPlannerSection() {
       <h2 className="text-trace-dim text-xl font-semibold mb-3 text-header">Goal Planner</h2>
 
       <div className="flex flex-col gap-2 mb-4">
+        {editingId && (
+          <p className="text-[10px] text-trace">Editing — Save to update, or Cancel below</p>
+        )}
         <input
           type="text"
           placeholder="Goal title"
@@ -157,12 +187,22 @@ function GoalPlannerSection() {
           onChange={(e) => setTargetDate(e.target.value)}
           className="bg-void border border-border-subtle p-2 rounded text-text-primary text-sm"
         />
-        <button
-          onClick={handleAddGoal}
-          className="bg-hover text-white px-4 py-2 rounded-lg hover:bg-trace-dim transition-colors text-sm"
-        >
-          Add Goal
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleAddGoal}
+            className="bg-hover text-white px-4 py-2 rounded-lg hover:bg-trace-dim transition-colors text-sm flex-1"
+          >
+            {editingId ? 'Save Changes' : 'Add Goal'}
+          </button>
+          {editingId && (
+            <button
+              onClick={resetForm}
+              className="bg-surface-hover text-text-muted px-4 py-2 rounded-lg text-sm"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
         {errorMsg && <p className="text-[#E02626] text-sm">{errorMsg}</p>}
       </div>
 
@@ -177,12 +217,20 @@ function GoalPlannerSection() {
               <div className="flex justify-between items-start gap-2">
                 <p className="font-medium text-trace">{goal.title}</p>
                 {isOwner && (
-                  <button
-                    onClick={() => setConfirmDeleteId(goal.id)}
-                    className="hover:text-[#e0262665] text-[#E02626] text-[10px] flex-shrink-0"
-                  >
-                    Delete
-                  </button>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => startEditing(goal)}
+                      className="hover:text-text-muted text-[#DBD7D7] text-[12px]"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => setConfirmDeleteId(goal.id)}
+                      className="hover:text-[#e0262665] text-[#E02626] text-[12px]"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 )}
               </div>
               <p className="text-[13px] text-text-primary">
@@ -222,7 +270,8 @@ function GoalPlannerSection() {
           )
         })}
       </ul>
-    <ConfirmDialog
+
+      <ConfirmDialog
         open={confirmDeleteId !== null}
         title="Delete this goal?"
         message="This will also remove all its progress notes. This action cannot be undone."

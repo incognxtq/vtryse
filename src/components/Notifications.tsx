@@ -139,7 +139,7 @@ function Notifications() {
                         {reminder.event_time && ` at ${reminder.event_time}`}
                       </p>
                       {reminder.description && (
-                        <p className="text-[10px] text-text-primary mt-1 whitespace-normal break-words">
+                        <p className="text-[10px] text-text-primary mt-1 whitespace-pre-wrap break-words">
                           {reminder.description}
                         </p>
                       )}

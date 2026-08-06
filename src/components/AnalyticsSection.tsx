@@ -262,7 +262,7 @@ function AnalyticsSection() {
                 <p className="text-sm font-medium text-text-primary">{note.title}</p>
               </div>
               {note.description && (
-                <p className="text-xs text-text-primary mt-1">{note.description}</p>
+                <p className="text-xs text-text-primary mt-1 whitespace-pre-wrap">{note.description}</p>
               )}
               {note.attachment_url && (
                 <img
