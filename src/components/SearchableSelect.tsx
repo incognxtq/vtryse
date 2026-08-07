@@ -39,7 +39,7 @@ function SearchableSelect({ options, value, onChange, placeholder = 'Search...' 
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full text-left bg-void border border-border-subtle p-2.5 rounded-lg text-text-primary text-sm hover:bg-surface-hover transition-colors"
+        className="w-31.5 text-center bg-surface border border-border-subtle p-2.5 rounded-xl text-text-primary text-[11px] transition-colors"
       >
         {selectedLabel}
       </button>

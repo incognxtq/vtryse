@@ -439,69 +439,91 @@ function CalendarSection() {
               {editingId && (
                 <p className="p-mb-0 text-[13px] text-text-muted">EDITING</p>
               )}
-              <div className="flex gap-1">
+              <div className="flex gap-3">
+
+              {/* LEFT COLUMN - TYPE BUTTONS */}
+              <div className="flex flex-col gap-2 w-24">
                 {TYPE_OPTIONS.map((t) => (
                   <button
                     key={t}
                     onClick={() => setType(t)}
-                    className="flex-1 px-2 py-0.5 rounded font-semibold text-[12px]"
+                    className="px-2 py-0.5 rounded-xl font-semibold text-[12px] transition-colors"
                     style={{
                       backgroundColor: type === t ? TYPE_COLORS[t] : 'transparent',
-                      borderColor: TYPE_COLORS[t],
+                      border: `1px solid ${TYPE_COLORS[t]}`,
                       color: type === t ? 'black' : TYPE_COLORS[t],
                     }}
                   >
-                    {t}
+                    {t.charAt(0).toUpperCase() + t.slice(1)}
                   </button>
                 ))}
               </div>
 
-              <input
-                type="text"
-                placeholder="Title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="bg-void border font-bold p-2 rounded text-[13px] transition-colors"
-                style={{ borderColor: TYPE_COLORS[type], color: TYPE_COLORS[type] }}
-              />
+              {/* RIGHT COLUMN */}
+              <div className="flex-1 flex flex-col gap-2">
 
-              {/* Time · Timezone · Location — one row, left/center/right */}
-              <div className="grid grid-cols-4 gap-1">
-                <input
-                  type="time"
-                  value={eventTime}
-                  onChange={(e) => setEventTime(e.target.value)}
-                  className="bg-surface border border-border-subtle p-1 rounded text-text-primary text-[12px] w-full"
-                />
-                <SearchableSelect
-                  options={ALL_TIMEZONES.map((tz) => ({ value: tz, label: tz }))}
-                  value={eventTimezone}
-                  onChange={setEventTimezone}
-                  placeholder="Search timezone..."
-                />
+                {/* TITLE */}
                 <input
                   type="text"
-                  placeholder="Location"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="bg-surface border border-border-subtle p-1 rounded text-text-primary text-[12px] w-full"
+                  placeholder="Title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="bg-void border font-bold p-2 rounded-xl text-[13px]"
+                  style={{
+                    borderColor: TYPE_COLORS[type],
+                    color: TYPE_COLORS[type],
+                  }}
                 />
+
+                {/* TIME + TIMEZONE + LOCATION */}
+                <div className="grid grid-cols-[90px_120px_90px] gap-2">
+
+                  <input
+                    type="time"
+                    value={eventTime}
+                    onChange={(e) => setEventTime(e.target.value)}
+                    className="bg-surface border border-border-subtle p-2 w-24 rounded-xl text-text-primary text-[11px] text-center"
+                  />
+
+                  <SearchableSelect
+                    options={ALL_TIMEZONES.map((tz) => ({
+                      value: tz,
+                      label: tz,
+                    }))}
+                    value={eventTimezone}
+                    onChange={setEventTimezone}
+                    placeholder="Timezone"
+                  />
+
+                  <input
+                    type="text"
+                    placeholder="Location"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="bg-surface border border-border-subtle p-2 px-5 rounded-xl text-text-primary text-[11px]"
+                  />
+
+                </div>
+
+                {/* REPEAT */}
+                <button
+                  type="button"
+                  onClick={() => setRepeatOpen(true)}
+                  className="w-full text-left bg-surface border border-border-subtle p-1 rounded-xl text-text-primary text-[12px] transition-colors"
+                >
+                  {summarizeRepeat(repeatConfig)}
+                </button>
+
               </div>
 
-              <button
-                type="button"
-                onClick={() => setRepeatOpen(true)}
-                className="w-full text-left bg-surface border border-border-subtle p-1 px-3 rounded text-text-primary text-[12px] hover:bg-surface-hover transition-colors"
-              >
-                {summarizeRepeat(repeatConfig)}
-              </button>
+            </div>
 
               <textarea
                 placeholder="Description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
-                className="bg-surface border border-border-subtle p-2 rounded text-text-primary text-[12px] text-justify w-full resize-y min-h-[110px] leading-relaxed"
+                className="bg-surface border border-border-subtle p-2 rounded-xl text-text-primary text-[12px] text-justify w-full resize-y min-h-[110px] leading-relaxed"
               />
               <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="text-text-muted hover:text-trace text-xs" />
               <div className="flex gap-2">
