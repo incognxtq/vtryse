@@ -12,10 +12,10 @@ interface Reminder {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  event: '#84AB61',
-  task: '#BDA859',
+  event: '#77BA68',
+  task: '#E6CA6E',
   holiday: '#B0A5A5',
-  note: '#E8899A',
+  note: '#DE9E9E',
 }
 
 function getLocalDateString(date: Date) {
@@ -99,12 +99,12 @@ function Notifications() {
 
   return (
     <div className="flex-1 overflow-y-auto min-h-0">
-      <p className="text-xs font-medium text-text-muted px-4 mb-2 uppercase tracking-wide">
+      <p className="text-xs font-bold text-white px-4 mb-2 uppercase tracking-wide">
         Reminders
       </p>
 
       {visibleReminders.length === 0 ? (
-        <p className="text-xs text-text-muted px-4">Nothing due soon</p>
+        <p className="text-xs text-surface px-4">Nothing due soon</p>
       ) : (
         <div className="flex flex-col gap-2 px-2">
           {visibleReminders.map((reminder) => {
@@ -116,13 +116,13 @@ function Notifications() {
                 onMouseEnter={() => setExpandedId(reminder.id)}
                 onMouseLeave={() => setExpandedId(null)}
                 onClick={() => toggleExpand(reminder.id)}
-                className="border border-border-subtle rounded-lg px-3 py-2 cursor-pointer transition-all duration-300 ease-in-out"
+                className="border border-white rounded-lg px-3 py-2 cursor-pointer transition-all duration-300 ease-in-out"
               >
                 <div className="flex justify-between items-start gap-2">
                   <div className="min-w-0 flex-1">
                     <p
-                      className={`text-xs font-medium transition-all duration-300 ${
-                        isExpanded ? 'whitespace-normal break-words' : 'truncate'
+                      className={`text-xs font-bold transition-all duration-300 ${
+                        isExpanded ? 'whitespace-normal wrap-break-words' : 'truncate'
                       }`}
                       style={{ color: titleColor }}
                     >
@@ -134,12 +134,12 @@ function Notifications() {
                         isExpanded ? 'max-h-64 opacity-100 mt-1' : 'max-h-0 opacity-0'
                       }`}
                     >
-                      <p className="text-[10px] text-text-muted">
+                      <p className="text-[10px] font-bold text-surface">
                         {reminder.event_date}
                         {reminder.event_time && ` at ${reminder.event_time}`}
                       </p>
                       {reminder.description && (
-                        <p className="text-[10px] text-text-primary mt-1 whitespace-pre-wrap break-words">
+                        <p className="text-[11px] text-white mt-1 whitespace-pre-wrap Wrap-break-words">
                           {reminder.description}
                         </p>
                       )}
@@ -156,7 +156,7 @@ function Notifications() {
                     </div>
 
                     {!isExpanded && (
-                      <p className="text-[10px] text-text-muted truncate">
+                      <p className="text-[12px] text-white truncate">
                         {reminder.event_date}
                         {reminder.event_time && ` at ${reminder.event_time}`}
                       </p>
@@ -167,7 +167,7 @@ function Notifications() {
                       e.stopPropagation()
                       handleDismiss(reminder.id)
                     }}
-                    className="text-text-muted text-xs flex-shrink-0"
+                    className="text-text-muted text-xs shrink-0"
                   >
                     ✕
                   </button>

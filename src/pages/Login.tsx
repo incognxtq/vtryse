@@ -51,8 +51,8 @@ function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-void px-4">
-      <div className="w-full max-w-sm p-8 bg-surface border border-border-subtle rounded-xl">
-        <Link to="/" className="block text-2xl font-semibold mb-6 text-trace">
+      <div className="w-full max-w-sm p-8 bg-void border border-surface rounded-xl">
+        <Link to="/" className="block text-2xl font-bold mb-6 text-trace">
           vtryse
         </Link>
 
@@ -68,14 +68,14 @@ function Login() {
                 placeholder="Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="bg-void border border-border-subtle p-2 rounded text-text-primary placeholder:text-text-muted"
+                className="bg-void border border-border-subtle p-2 rounded-lg text-text-primary placeholder:text-text-muted"
               />
               <input
                 type="text"
                 placeholder="Username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="bg-void border border-border-subtle p-2 rounded text-text-primary placeholder:text-text-muted"
+                className="bg-void border border-border-subtle p-2 rounded-lg text-text-primary placeholder:text-text-muted"
               />
             </>
           )}
@@ -84,20 +84,20 @@ function Login() {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="bg-void border border-border-subtle p-2 rounded text-text-primary placeholder:text-text-muted"
+            className="bg-void border border-border-subtle p-2 rounded-lg text-text-primary placeholder:text-text-muted"
           />
           <input
             type="password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="bg-void border border-border-subtle p-2 rounded text-text-primary placeholder:text-text-muted"
+            className="bg-void border border-border-subtle p-2 rounded-lg text-text-primary placeholder:text-text-muted"
           />
         </div>
 
         <button
           onClick={isSignup ? handleSignUp : handleLogin}
-          className="w-full mt-4 bg-hover text-white px-4 py-2 rounded-lg hover:bg-trace-dim transition-colors"
+          className="w-full mt-4 bg-trace hover:bg-surface text-white border border-border-subtle px-4 py-2 rounded-lg text-base font-medium transition-colors"
         >
           {isSignup ? 'Sign Up' : 'Log In'}
         </button>

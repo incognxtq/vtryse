@@ -9,20 +9,20 @@ function Home() {
         className="w-38 h-38 md:w-50 md:h-45 mb-0"
       />
 
-      <h1 className="text-6xl md:text-8xl font-bold text-trace tracking-tight mt-0 mb-2 font-display">
+      <h1 className="text-6xl md:text-8xl font-bold text-white tracking-tight mt-0 mb-2 font-display">
         vtryse
       </h1>
       <p className="text-text-muted text-l text-primary mt-0 mb-4">Trace Your Progress</p>
       <div className="flex gap-4">
         <Link
           to="/login"
-          className="bg-hover text-text-primary border border-border-subtle px-6 py-3 rounded-lg text-base font-medium transition-colors"
+          className="bg-trace text-white border border-border-subtle px-6 py-3 rounded-lg text-base font-medium transition-colors"
         >
           Log In
         </Link>
         <Link
           to="/signup"
-          className="text-text-primary border border-border-subtle px-6 py-3 rounded-lg text-base font-medium hover:bg-hover transition-colors"
+          className="text-white border border-border-subtle px-6 py-3 rounded-lg text-base font-medium hover:bg-trace transition-colors"
         >
           Sign Up
         </Link>

@@ -168,11 +168,11 @@ function GoalPlannerSection() {
 
   return (
     <div>
-      <h2 className="text-trace-dim text-xl font-semibold mb-3 text-header">Goal Planner</h2>
+      <h2 className="text-trace text-xl font-bold mb-3 text-header">GOAL PLANNER</h2>
 
       <div className="flex flex-col gap-2 mb-4">
         {editingId && (
-          <p className="text-[10px] text-trace">Editing — Save to update, or Cancel below</p>
+          <p className="text-[11px]">Editing - Save to update, or Cancel below</p>
         )}
         <input
           type="text"
@@ -190,14 +190,14 @@ function GoalPlannerSection() {
         <div className="flex gap-2">
           <button
             onClick={handleAddGoal}
-            className="bg-hover text-white px-4 py-2 rounded-lg hover:bg-trace-dim transition-colors text-sm flex-1"
+            className="bg-trace px-4 py-2 rounded-lg hover:bg-surface transition-colors text-sm flex-1"
           >
             {editingId ? 'Save Changes' : 'Add Goal'}
           </button>
           {editingId && (
             <button
               onClick={resetForm}
-              className="bg-surface-hover text-text-muted px-4 py-2 rounded-lg text-sm"
+              className="bg-surface text-text-muted px-4 py-2 rounded-lg text-sm"
             >
               Cancel
             </button>
@@ -215,12 +215,12 @@ function GoalPlannerSection() {
           return (
             <li key={goal.id} className="bg-void border border-border-subtle p-4 rounded-lg text-lg">
               <div className="flex justify-between items-start gap-2">
-                <p className="font-medium text-trace">{goal.title}</p>
+                <p className="font-bold text-[#C49D8B]">{goal.title}</p>
                 {isOwner && (
                   <div className="flex gap-2 flex-shrink-0">
                     <button
                       onClick={() => startEditing(goal)}
-                      className="hover:text-text-muted text-[#DBD7D7] text-[12px]"
+                      className="hover:text-text-muted text-[12px]"
                     >
                       Edit
                     </button>
@@ -249,11 +249,11 @@ function GoalPlannerSection() {
                   onChange={(e) =>
                     setNoteInputs({ ...noteInputs, [goal.id]: e.target.value })
                   }
-                  className="bg-surface border border-border-subtle p-1 rounded w-full mb-1 text-text-primary placeholder:text-text-muted text-xs"
+                  className="border border-border-subtle p-1 rounded w-full mb-1 text-text-primary placeholder:text-text-muted text-xs"
                 />
                 <button
                   onClick={() => handleAddUpdate(goal.id)}
-                  className="bg-surface text-text-primary px-3 py-1 rounded text-xs hover:bg-hover transition-colors"
+                  className="bg-surface px-3 py-1 rounded text-xs hover:bg-void transition-colors"
                 >
                   Log Update
                 </button>

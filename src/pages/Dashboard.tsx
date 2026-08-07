@@ -34,13 +34,13 @@ function Dashboard() {
       <DashboardHeader />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-surface border border-border-subtle rounded-xl p-5">
+        <div className="bg-void border border-surface rounded-xl p-5">
           <AnalyticsSection />
         </div>
-        <div className="bg-surface border border-border-subtle rounded-xl p-5">
+        <div className="bg-void border border-surface rounded-xl p-5">
           <CalendarSection />
         </div>
-        <div className="bg-surface border border-border-subtle rounded-xl p-5">
+        <div className="bg-void border border-surface rounded-xl p-5">
           <GoalPlannerSection />
         </div>
       </div>

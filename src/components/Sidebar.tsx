@@ -40,20 +40,20 @@ function Sidebar() {
   const linkClass = (path: string) =>
     `block px-4 py-2 rounded-lg text-sm transition-colors ${
       location.pathname === path
-        ? "bg-trace/20 text-trace font-medium"
-        : "text-text-muted hover:bg-surface-hover hover:text-text-primary"
+        ? "bg-white/90 text-trace font-bold"
+        : "text-white hover:bg-surface hover:text-text-primary"
     }`;
 
   return (
     <>
       {/* Mobile top bar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-surface border-b border-border-subtle flex items-center justify-between px-4 z-50">
-        <h1 className="text-lg font-semibold text-trace tracking-wide">
-          VTryse
+      <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-trace border-b border-border-subtle flex items-center justify-between px-4 z-50">
+        <h1 className="text-lg font-semibold text-white tracking-wide">
+          vtryse
         </h1>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="text-text-primary text-2xl leading-none"
+          className="text-white text-2xl leading-none"
         >
           {isOpen ? "✕" : "☰"}
         </button>
@@ -69,14 +69,14 @@ function Sidebar() {
 
       {/* Sidebar */}
       <aside
-        className={`w-56 h-screen bg-surface border-r border-sidebar-border flex flex-col p-4 fixed left-0 top-0 z-50 transition-transform duration-200
+        className={`w-56 h-screen bg-trace border-sidebar-border flex flex-col p-4 fixed left-0 top-0 z-50 transition-transform duration-200
         ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
       >
         <div className="mb-6 px-2 hidden md:block">
-          <h1 className="text-2xl font-bold text-primary tracking-wide text-trace">
+          <h1 className="text-2xl font-bold text-primary tracking-wide text-black">
             vtryse
           </h1>
-          <p className="text-xs font-bold text-primary mb-4">Trace Your Progress</p>
+          <p className="text-xs text-primary mb-4">Trace Your Progress</p>
         </div>
         <div className="mb-4 md:hidden h-10" />
 
@@ -86,10 +86,10 @@ function Sidebar() {
             <img
               src={avatarUrl}
               alt="Profile"
-              className="w-9 h-9 rounded-full object-cover border border-border-subtle flex-shrink-0"
+              className="w-9 h-9 rounded-full object-cover border border-border-subtle shrink-0"
             />
           ) : (
-            <div className="w-9 h-9 rounded-full bg-surface-hover border border-border-subtle flex items-center justify-center text-text-muted text-xs flex-shrink-0">
+            <div className="w-9 h-9 rounded-full bg-black flex items-center justify-center text-text-primary text-xs shrink-0">
               {name ? name.charAt(0).toUpperCase() : "?"}
             </div>
           )}
@@ -98,7 +98,7 @@ function Sidebar() {
               {name || "User"}
             </span>
             {username && (
-              <span className="text-xs text-text-muted truncate">
+              <span className="text-xs text-black truncate">
                 {username}
               </span>
             )}
@@ -126,7 +126,7 @@ function Sidebar() {
 
         <button
           onClick={handleLogout}
-          className="text-sm text-left px-4 py-2 rounded-lg text-text-muted hover:bg-hover transition-colors"
+          className="text-sm text-center px-4 py-2 rounded-lg text-white hover:bg-black hover:text-white transition-colors"
         >
           Log Out
         </button>

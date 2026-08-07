@@ -3,7 +3,8 @@ import { supabase } from '../supabaseClient'
 import ConfirmDialog from './ConfirmDialog'
 import { type RepeatConfig, summarizeRepeat, generateOccurrenceDates } from './RepeatPopover'
 import RepeatModal from './RepeatModal'
-import { ALL_TIMEZONES, getBrowserTimezone, convertEventTimeForViewer } from '../utils/timezone'
+import SearchableSelect from './SearchableSelect'
+import { ALL_TIMEZONES, getBrowserTimezone } from '../utils/timezone'
 
 interface CalendarEvent {
   id: string
@@ -18,13 +19,14 @@ interface CalendarEvent {
   color: string
   location: string | null
   timezone: string | null
+  repeat_group_id: string | null
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  event: '#84AB61',
-  task: '#BDA859',
+  event: '#77BA68',
+  task: '#E6CA6E',
   holiday: '#B0A5A5',
-  note: '#E8899A',
+  note: '#DE9E9E',
 }
 
 const TYPE_OPTIONS = ['event', 'task', 'holiday', 'note']
@@ -39,16 +41,25 @@ const DEFAULT_REPEAT: RepeatConfig = {
   occurrences: 5,
 }
 
+function formatTime12h(time: string | null) {
+  if (!time) return null
+  const [h, m] = time.split(':').map(Number)
+  const period = h >= 12 ? 'PM' : 'AM'
+  const hour12 = h % 12 === 0 ? 12 : h % 12
+  return `${hour12}:${String(m).padStart(2, '0')} ${period}`
+}
+
 function CalendarSection() {
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [profileNames, setProfileNames] = useState<Record<string, string>>({})
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-  const [viewerTimezone, setViewerTimezone] = useState(getBrowserTimezone())
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [deleteScopeId, setDeleteScopeId] = useState<string | null>(null)
+  const [hoveredEventId, setHoveredEventId] = useState<string | null>(null)
 
   const [title, setTitle] = useState('')
   const [type, setType] = useState('event')
@@ -70,7 +81,7 @@ function CalendarSection() {
   const fetchEvents = async () => {
     const { data } = await supabase
       .from('calendar_events')
-      .select('id, user_id, type, title, description, event_date, event_time, status, attachment_url, color, location, timezone')
+      .select('id, user_id, type, title, description, event_date, event_time, status, attachment_url, color, location, timezone, repeat_group_id')
     setEvents(data || [])
   }
 
@@ -85,20 +96,12 @@ function CalendarSection() {
     }
   }
 
-  const fetchViewerTimezone = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const { data } = await supabase.from('profiles').select('timezone').eq('id', user.id).maybeSingle()
-    if (data?.timezone) setViewerTimezone(data.timezone)
-  }
-
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       setCurrentUserId(user?.id || null)
       fetchEvents()
       fetchProfileNames()
-      fetchViewerTimezone()
     }
     init()
   }, [])
@@ -157,11 +160,29 @@ function CalendarSection() {
     setShowForm(true)
   }
 
-  const handleDeleteEvent = async (eventId: string) => {
-    const { error } = await supabase
-      .from('calendar_events')
-      .delete()
-      .eq('id', eventId)
+  const performDelete = async (eventId: string, scope: 'this' | 'following' | 'all') => {
+    const target = events.find((e) => e.id === eventId)
+    if (!target) return
+
+    let error = null
+
+    if (scope === 'this' || !target.repeat_group_id) {
+      const res = await supabase.from('calendar_events').delete().eq('id', eventId)
+      error = res.error
+    } else if (scope === 'all') {
+      const res = await supabase
+        .from('calendar_events')
+        .delete()
+        .eq('repeat_group_id', target.repeat_group_id)
+      error = res.error
+    } else if (scope === 'following') {
+      const res = await supabase
+        .from('calendar_events')
+        .delete()
+        .eq('repeat_group_id', target.repeat_group_id)
+        .gte('event_date', target.event_date)
+      error = res.error
+    }
 
     if (error) {
       setErrorMsg(error.message)
@@ -170,6 +191,16 @@ function CalendarSection() {
       notifyDataChanged()
     }
     setConfirmDeleteId(null)
+    setDeleteScopeId(null)
+  }
+
+  const handleDeleteClick = (eventId: string) => {
+    const target = events.find((e) => e.id === eventId)
+    if (target?.repeat_group_id) {
+      setDeleteScopeId(eventId)
+    } else {
+      setConfirmDeleteId(eventId)
+    }
   }
 
   const handleSaveEvent = async () => {
@@ -257,11 +288,11 @@ function CalendarSection() {
 
   return (
     <div>
-      <h2 className="text-trace-dim text-xl font-semibold mb-3 text-header">Calendar</h2>
+      <h2 className="text-trace text-xl font-bold mb-3 text-header">CALENDAR</h2>
 
       <div className="flex items-center justify-between mb-4">
         <button onClick={() => setCurrentMonth(new Date(year, month - 1, 1))} className="text-text-muted text-sm px-2">‹</button>
-        <p className="text-l font-medium text-text-primary">{monthLabel}</p>
+        <p className="text-l font-medium">{monthLabel}</p>
         <button onClick={() => setCurrentMonth(new Date(year, month + 1, 1))} className="text-text-muted text-sm px-2">›</button>
       </div>
 
@@ -282,15 +313,33 @@ function CalendarSection() {
                   setShowForm(false)
                 }
               }}
-              className={`h-15 rounded border text-[10px] p-1 cursor-pointer overflow-hidden
+              className={`h-15 rounded border text-[10px] p-1 cursor-pointer overflow-visible relative
                 ${date ? 'border-border-subtle bg-void hover:bg-surface' : 'border-transparent'}
                 ${selectedDate === date ? 'ring-2 ring-trace' : ''}`}
             >
               {date && <span className="text-text-muted">{parseInt(date.split('-')[2])}</span>}
               <div className="flex flex-col gap-0.5 mt-0.5">
                 {dayEvents.slice(0, 2).map((e) => (
-                  <div key={e.id} className="truncate rounded px-1" style={{ backgroundColor: TYPE_COLORS[e.type] || e.color, color: '#000000' }}>
+                  <div
+                    key={e.id}
+                    className="relative truncate rounded px-1"
+                    style={{ backgroundColor: TYPE_COLORS[e.type] }}
+                    onMouseEnter={(ev) => { ev.stopPropagation(); setHoveredEventId(e.id) }}
+                    onMouseLeave={() => setHoveredEventId(null)}
+                  >
                     {e.title}
+                    {hoveredEventId === e.id && (
+                      <div
+                        className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 z-50 whitespace-nowrap px-2 py-1 rounded-md text-[11px] font-medium shadow-lg border"
+                        style={{
+                          backgroundColor: 'var(--color-surface)',
+                          borderColor: TYPE_COLORS[e.type],
+                          color: TYPE_COLORS[e.type],
+                        }}
+                      >
+                        {e.type} - {e.title}
+                      </div>
+                    )}
                   </div>
                 ))}
                 {dayEvents.length > 2 && <span className="text-text-muted">+{dayEvents.length - 2}</span>}
@@ -301,51 +350,53 @@ function CalendarSection() {
       </div>
 
       {selectedDate && (
-        <div className="bg-surface border border-border-subtle rounded-lg p-3">
+        <div className="bg-trace/20 border border-border-subtle rounded-lg p-3">
           <div className="flex justify-between items-center mb-1">
-            <p className="text-[15px] font-medium text-text-primary">{selectedDate}</p>
+            <p className="text-[12px] font-medium text-text-primary">{selectedDate}</p>
             <button onClick={() => { setSelectedDate(null); resetForm(); setShowForm(false) }} className="text-text-muted hover:text-[#E02626] text-xs">✕</button>
           </div>
 
-          <ul className="space-y-2 mb-4">
+          <ul className="space-y-2 mb-2">
             {eventsForDate(selectedDate).map((e) => {
               const isOwner = e.user_id === currentUserId
-              const converted = convertEventTimeForViewer(
-                e.event_date,
-                e.event_time,
-                e.timezone || 'UTC',
-                viewerTimezone
-              )
+              const timeLabel = formatTime12h(e.event_time)
+              const typeColor = TYPE_COLORS[e.type] || e.color
+
               return (
                 <li key={e.id} className="text-[13px] flex flex-col gap-1 border-b border-border-subtle pb-1 last:border-0">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="w- h-2 rounded-full flex-shrink-0" style={{ backgroundColor: TYPE_COLORS[e.type] || e.color }} />
-                      <span className="text-trace truncate">[{e.type}] {e.title}</span>
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: typeColor }} />
+                      <span className="truncate font-bold" style={{ color: typeColor }}>
+                        [{e.type}] {e.title}
+                      </span>
+                      {e.repeat_group_id && (
+                        <span className="shrink-0" title="Repeating event">🔁</span>
+                      )}
                       {e.attachment_url && (
-                        <a href={e.attachment_url} target="_blank" rel="noopener noreferrer" className="text-text-primary flex-shrink-0">
+                        <a href={e.attachment_url} target="_blank" rel="noopener noreferrer" className="shrink-0">
                           file
                         </a>
                       )}
                     </div>
                     {isOwner && (
-                      <div className="flex gap-2 flex-shrink-0">
+                      <div className="flex gap-2 shrink-0">
                         <button onClick={() => startEditing(e)} className="hover:text-text-muted text-[#DBD7D7] text-[12px]">Edit</button>
-                        <button onClick={() => setConfirmDeleteId(e.id)} className="hover:text-[#e0262665] text-[#E02626] text-[12px]">Delete</button>
+                        <button onClick={() => handleDeleteClick(e.id)} className="hover:text-[#e0262665] text-[#E02626] text-[12px]">Delete</button>
                       </div>
                     )}
                   </div>
 
-                  {converted && (
-                    <p className="text-[11px] text-text-muted ml-4">
-                      {converted.time} ({viewerTimezone})
+                  {timeLabel && (
+                    <p className="text-[11px] ml-4">
+                      {timeLabel} {e.timezone && `(${e.timezone})`}
                     </p>
                   )}
                   {e.location && (
-                    <p className="text-[11px] text-text-muted ml-4">📍 {e.location}</p>
+                    <p className="text-[12px] text-text-muted ml-4">📍 {e.location}</p>
                   )}
 
-                  <p className="text-[13px] text-text-muted mb-1 ml-4">
+                  <p className="text-[11px] text-text-muted mb-1 ml-4">
                     Added by {profileNames[e.user_id] || 'Someone'}
                   </p>
 
@@ -359,7 +410,7 @@ function CalendarSection() {
                           className={`px-4 py-1.5 rounded text-[10px] capitalize transition-colors ${
                             e.status === s
                               ? s === 'ongoing'
-                                ? 'bg-[#DBD7D7] text-void'
+                                ? 'bg-[#C49D8B] text-void'
                                 : s === 'completed'
                                 ? 'bg-[#193B20] text-white'
                                 : 'bg-[#690000] text-white'
@@ -397,7 +448,7 @@ function CalendarSection() {
                     style={{
                       backgroundColor: type === t ? TYPE_COLORS[t] : 'transparent',
                       borderColor: TYPE_COLORS[t],
-                      color: type === t ? '#000000' : TYPE_COLORS[t],
+                      color: type === t ? 'black' : TYPE_COLORS[t],
                     }}
                   >
                     {t}
@@ -410,41 +461,39 @@ function CalendarSection() {
                 placeholder="Title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="bg-surface border-1 font-medium p-2 rounded text-[13px] transition-colors"
+                className="bg-void border font-bold p-2 rounded text-[13px] transition-colors"
                 style={{ borderColor: TYPE_COLORS[type], color: TYPE_COLORS[type] }}
               />
 
-              <input
-                type="time"
-                value={eventTime}
-                onChange={(e) => setEventTime(e.target.value)}
-                className="bg-surface border border-border-subtle p-1 rounded text-text-primary text-[12px]"
-              />
-
-              <select
-                value={eventTimezone}
-                onChange={(e) => setEventTimezone(e.target.value)}
-                className="bg-surface border border-border-subtle p-2 rounded text-text-primary text-[12px]"
-              >
-                {ALL_TIMEZONES.map((tz) => (
-                  <option key={tz} value={tz}>{tz}</option>
-                ))}
-              </select>
-
-              <input
-                type="text"
-                placeholder="Location (optional)"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="bg-surface border border-border-subtle p-2 rounded text-text-primary text-[12px]"
-              />
+              {/* Time · Timezone · Location — one row, left/center/right */}
+              <div className="grid grid-cols-4 gap-1">
+                <input
+                  type="time"
+                  value={eventTime}
+                  onChange={(e) => setEventTime(e.target.value)}
+                  className="bg-surface border border-border-subtle p-1 rounded text-text-primary text-[12px] w-full"
+                />
+                <SearchableSelect
+                  options={ALL_TIMEZONES.map((tz) => ({ value: tz, label: tz }))}
+                  value={eventTimezone}
+                  onChange={setEventTimezone}
+                  placeholder="Search timezone..."
+                />
+                <input
+                  type="text"
+                  placeholder="Location"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="bg-surface border border-border-subtle p-1 rounded text-text-primary text-[12px] w-full"
+                />
+              </div>
 
               <button
                 type="button"
                 onClick={() => setRepeatOpen(true)}
-                className="w-full text-left bg-surface border border-border-subtle p-2 rounded text-text-primary text-[12px] hover:bg-surface-hover transition-colors"
+                className="w-full text-left bg-surface border border-border-subtle p-1 px-3 rounded text-text-primary text-[12px] hover:bg-surface-hover transition-colors"
               >
-                🔁 {summarizeRepeat(repeatConfig)}
+                {summarizeRepeat(repeatConfig)}
               </button>
 
               <textarea
@@ -452,15 +501,15 @@ function CalendarSection() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
-                className="bg-surface border border-border-subtle p-2 rounded text-text-primary text-[13px] w-full resize-y min-h-[110px] leading-relaxed"
+                className="bg-surface border border-border-subtle p-2 rounded text-text-primary text-[12px] text-justify w-full resize-y min-h-[110px] leading-relaxed"
               />
-              <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="text-text-muted hover:text-text-primary text-xs" />
+              <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="text-text-muted hover:text-trace text-xs" />
               <div className="flex gap-2">
-                <button onClick={handleSaveEvent} disabled={uploading} className="bg-hover text-white px-3 py-1 rounded text-xs hover:bg-trace-dim">
+                <button onClick={handleSaveEvent} disabled={uploading} className="bg-trace px-3 py-1 rounded text-xs hover:bg-surface-hover">
                   {uploading ? 'Uploading...' : editingId ? 'Save Changes' : 'Add'}
                 </button>
                 {editingId && (
-                  <button onClick={() => { resetForm(); setShowForm(false) }} className="bg-surface-hover hover:bg-trace-dim text-text- px-3 py-1 rounded text-xs">
+                  <button onClick={() => { resetForm(); setShowForm(false) }} className="bg-surface-hover text-text- px-3 py-1 rounded text-xs">
                     Cancel
                   </button>
                 )}
@@ -475,9 +524,54 @@ function CalendarSection() {
         open={confirmDeleteId !== null}
         title="Delete this event?"
         message="This action cannot be undone."
-        onConfirm={() => confirmDeleteId && handleDeleteEvent(confirmDeleteId)}
+        onConfirm={() => confirmDeleteId && performDelete(confirmDeleteId, 'this')}
         onCancel={() => setConfirmDeleteId(null)}
       />
+
+      {deleteScopeId !== null && (
+        <div
+          className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center px-4"
+          onClick={() => setDeleteScopeId(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-surface border border-border-subtle rounded-xl p-5 max-w-xs w-full"
+          >
+            <p className="text-sm font-medium text-text-primary mb-1">Delete repeating event</p>
+            <p className="text-xs text-text-muted mb-5">This event repeats. Which occurrences do you want to delete?</p>
+
+            <div className="flex flex-col gap-2 mb-4">
+              <button
+                onClick={() => deleteScopeId && performDelete(deleteScopeId, 'this')}
+                className="text-left px-3 py-2 rounded-lg text-sm border border-border-subtle text-text-primary hover:bg-surface-hover transition-colors"
+              >
+                This event
+              </button>
+              <button
+                onClick={() => deleteScopeId && performDelete(deleteScopeId, 'following')}
+                className="text-left px-3 py-2 rounded-lg text-sm border border-border-subtle text-text-primary hover:bg-surface-hover transition-colors"
+              >
+                This and following events
+              </button>
+              <button
+                onClick={() => deleteScopeId && performDelete(deleteScopeId, 'all')}
+                className="text-left px-3 py-2 rounded-lg text-sm border border-border-subtle text-text-primary hover:bg-surface-hover transition-colors"
+              >
+                All events
+              </button>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                onClick={() => setDeleteScopeId(null)}
+                className="px-3 py-1.5 rounded-lg text-xs border border-border-subtle text-text-primary hover:bg-surface-hover transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <RepeatModal
         open={repeatOpen}

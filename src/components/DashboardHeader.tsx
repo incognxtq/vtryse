@@ -6,7 +6,7 @@ import { formatInTimezone } from '../utils/timezone'
 interface MemberInfo {
   name: string
   country: string | null
-  timezone: string
+  timezone: string 
   weather: string | null
   temp: number | null
 }

@@ -23,7 +23,7 @@ interface Goal {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  ongoing: '#ffffff',
+  ongoing: '#C49D8B',
   completed: '#193B20',
   cancelled: '#690000',
 }
@@ -129,20 +129,20 @@ function AnalyticsSection() {
 
   return (
     <div>
-      <h2 className="text-trace-dim text-xl font-semibold mb-3 text-header">
-        Analytics
+      <h2 className="text-trace text-xl font-bold mb-3 text-header">
+        ANALYTICS
       </h2>
 
       <div className="flex justify-end gap-2 mb-3">
         <button
           onClick={() => setChartType('bar')}
-          className={`px-3 py-1 rounded text-xs ${chartType === 'bar' ? 'bg-hover text-white' : 'bg-surface text-text-muted'}`}
+          className={`px-3 py-1 rounded text-xs ${chartType === 'bar' ? 'bg-trace text-white' : 'bg-void text-text-muted'}`}
         >
           Bar
         </button>
         <button
           onClick={() => setChartType('pie')}
-          className={`px-3 py-1 rounded text-xs ${chartType === 'pie' ? 'bg-hover text-white' : 'bg-surface text-text-muted'}`}
+          className={`px-3 py-1 rounded text-xs ${chartType === 'pie' ? 'bg-trace text-white' : 'bg-void text-text-muted'}`}
         >
           Pie
         </button>
@@ -214,7 +214,7 @@ function AnalyticsSection() {
       <div className="h-40 mb-2">
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart>
-            <CartesianGrid strokeDasharray="3 3" stroke="#26262f" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#C49D8B" />
             <XAxis
               dataKey="x"
               type="number"
@@ -248,9 +248,9 @@ function AnalyticsSection() {
       </div>
 
       {selectedNotes && selectedNotes.length > 0 && (
-        <div className="mb-4 bg-void border border-border-subtle rounded-lg p-3 space-y-3">
+        <div className="mb-4 bg-surface border border-border-subtle rounded-lg p-3 space-y-3">
           <div className="flex justify-between items-center">
-            <p className="text-sm font-medium text-text-primary">{selectedNotes[0].event_date}</p>
+            <p className="text-[11px] text-text-muted">{selectedNotes[0].event_date}</p>
             <button onClick={() => setSelectedNotes(null)} className="text-text-muted text-xs">
               ✕
             </button>
@@ -259,10 +259,10 @@ function AnalyticsSection() {
             <div key={note.id} className="border-t border-border-subtle pt-2 first:border-0 first:pt-0">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: TYPE_COLORS[note.type] || note.color }} />
-                <p className="text-sm font-medium text-text-primary">{note.title}</p>
+                <p className="text-sm font-bold text-[#C49D8B]">{note.title}</p>
               </div>
               {note.description && (
-                <p className="text-xs text-text-primary mt-1 whitespace-pre-wrap">{note.description}</p>
+                <p className="text-xs text-text-primary text-justify mt-1 whitespace-pre-wrap">{note.description}</p>
               )}
               {note.attachment_url && (
                 <img
@@ -286,7 +286,7 @@ function AnalyticsSection() {
           const days = getDaysRemaining(goal.target_date)
           return (
             <p key={goal.id} className="text-[13px] mb-0 text-text-muted">
-              <span className="text-trace">{goal.title}</span> —{' '}
+              <span className="text-[#C49D8B] font-bold">{goal.title}</span> —{' '}
               {days >= 0 ? `${days} days remaining` : 'Overdue'}
             </p>
           )

@@ -266,11 +266,11 @@ function Settings() {
 
   const sectionLabel =
     "text-[11px] font-medium text-text-muted uppercase tracking-widest mb-4";
-  const card = "bg-surface border border-border-subtle rounded-xl p-5 mb-4";
+  const card = "bg-void border border-border-subtle rounded-xl p-5 mb-4";
   const inputStyle =
-    "border border-border-subtle bg-void p-2.5 rounded-lg text-text-primary text-sm placeholder:text-text-muted focus:outline-none focus:border-trace transition-colors";
+    "border border-border-subtle bg-surface/50 p-2.5 rounded-lg text-text-primary text-sm placeholder:text-text-muted focus:outline-none focus:border-trace transition-colors";
   const primaryBtn =
-    "bg-hover text-white px-4 py-2 rounded-lg text-sm hover:bg-trace-dim transition-colors";
+    "bg-trace text-white px-4 py-2 rounded-lg text-sm hover:bg-surface transition-colors";
   const secondaryBtn =
     "border border-border-subtle text-text-primary px-4 py-2 rounded-lg text-sm hover:bg-surface-hover transition-colors";
 
@@ -287,7 +287,7 @@ function Settings() {
             <img
               src={avatarUrl}
               alt="Profile"
-              className="w-16 h-16 rounded-full object-cover border border-border-subtle"
+              className="w-16 h-16 rounded-full object-cover"
             />
           ) : (
             <div className="w-16 h-16 rounded-full bg-surface-hover border border-border-subtle flex items-center justify-center text-text-muted text-xs">
@@ -377,8 +377,8 @@ function Settings() {
               onClick={() => handleThemeChange(t)}
               className={`flex-1 px-3 py-2 rounded-lg text-sm capitalize transition-colors ${
                 theme === t
-                  ? "bg-hover hover:bg-trace-dim text-white hover:text-text-primary"
-                  : "border border-border-subtle text-text-muted hover:bg-trace-dim hover:text-text-primary"
+                  ? "bg-trace hover:bg-surface hover:text-text-primary"
+                  : "border border-border-subtle text-text-muted hover:bg-surface hover:text-text-primary"
               }`}
             >
               {t}
@@ -434,8 +434,8 @@ function Settings() {
           onClick={handleToggleShareLocation}
           className={`px-4 py-2 rounded-lg text-sm transition-colors ${
             shareLocation
-              ? "bg-hover text-white hover:bg-trace-dim"
-              : "border border-border-subtle text-text-muted hover:bg-surface-hover"
+              ? "bg-trace text-white hover:bg-surface"
+              : "border border-border-subtle text-text-muted hover:bg-surface"
           }`}
         >
           {shareLocation ? "Sharing Enabled" : "Sharing Disabled"}
